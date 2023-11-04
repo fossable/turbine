@@ -3,6 +3,9 @@ name = "turbine"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+axum = "0.6.20"
+config = "0.13.3"
+git2 = "0.18.1"
+monero-rpc = "0.4.0"
+tokio = "1.33.0"
