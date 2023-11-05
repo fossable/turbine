@@ -1,4 +1,5 @@
-use serde_derive::Deserialize;
+use serde::Deserialize;
+use std::error::Error;
 
 #[derive(Debug, Default, Deserialize, PartialEq, Eq)]
 pub struct AppConfig {
