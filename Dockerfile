@@ -1,38 +1,31 @@
 FROM rust as builder
 
-RUN USER=root cargo new --bin rust-docker-web
-WORKDIR ./rust-docker-web
+RUN USER=root cargo new --bin turbine
+WORKDIR /turbine
 COPY ./Cargo.toml ./Cargo.toml
 RUN cargo build --release
 RUN rm src/*.rs
 
-ADD . ./
+ADD src ./src
+ADD templates ./templates
 
-RUN rm ./target/release/deps/rust_docker_web*
+RUN rm ./target/release/deps/turbine*
 RUN cargo build --release
 
-
-FROM debian:buster-slim
-ARG APP=/usr/src/app
+FROM debian:bookworm-slim
+ARG APP=/app
+EXPOSE 80
+ENV TZ=Etc/UTC
 
 RUN apt-get update \
-    && apt-get install -y ca-certificates tzdata \
+    && apt-get install -y bzip2 ca-certificates curl tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-EXPOSE 8000
+COPY --from=builder /turbine/target/release/turbine ${APP}/turbine
 
-ENV TZ=Etc/UTC \
-    APP_USER=appuser
-
-RUN groupadd $APP_USER \
-    && useradd -g $APP_USER $APP_USER \
-    && mkdir -p ${APP}
-
-COPY --from=builder /rust-docker-web/target/release/rust-docker-web ${APP}/rust-docker-web
-
-RUN chown -R $APP_USER:$APP_USER ${APP}
-
-USER $APP_USER
 WORKDIR ${APP}
 
-CMD ["./rust-docker-web"]
+# Install monero wallet RPC daemon
+RUN curl https://downloads.getmonero.org/cli/monero-linux-x64-v0.18.3.3.tar.bz2 | tar --transform='flags=r;s|.*/||' -xjf - -C /usr/bin monero-x86_64-linux-gnu-v0.18.3.3/monero-wallet-rpc
+
+CMD ["./turbine", "serve"]

@@ -20,12 +20,18 @@ pub struct ServeArgs {
     bind: Option<String>,
     // #[cfg(feature = "monero")]
     // monero_wallet_url: String,
+    #[cfg(feature = "monero")]
+    #[clap(long, num_args = 0)]
+    stagenet: bool,
+    #[cfg(feature = "monero")]
+    #[clap(long, num_args = 0)]
+    testnet: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct AppState {
     #[cfg(feature = "monero")]
-    monero: crate::currency::monero::MoneroState,
+    pub monero: crate::currency::monero::MoneroState,
 }
 
 pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
