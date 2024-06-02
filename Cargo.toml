@@ -8,7 +8,7 @@ axum = "0.7.5"
 config = "0.13.3"
 git2 = "0.18.1"
 anyhow = "1.0.86"
-clap = { version = "4.5.4", features = ["string"] }
+clap = { version = "4.5.4", features = ["string", "derive"] }
 monero = "0.21.0"
 monero-rpc = { version = "0.4.0", features = ["rpc_authentication"], optional = true }
 reqwest = { version = "0.12.4", features = ["json"] }
@@ -16,6 +16,9 @@ serde = { version = "1.0.203", features = ["derive"] }
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+askama = { version = "0.12.1", features = ["with-axum"] }
+askama_axum = "0.4.0"
+cached = { version = "0.51.3", features = ["async"] }
 
 [features]
 monero = ["dep:monero-rpc"]

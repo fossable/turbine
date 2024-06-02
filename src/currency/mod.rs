@@ -1,6 +1,9 @@
+#[cfg(feature = "monero")]
+pub mod monero;
 
 pub enum Address {
     BTC(String),
+    #[cfg(feature = "monero")]
     XMR(String),
 }
 
@@ -9,6 +12,7 @@ impl Address {
         // TODO validate address
         match currency.to_lowercase().as_str() {
             "btc" => Some(Self::BTC(address.into())),
+            #[cfg(feature = "monero")]
             "xmr" => Some(Self::XMR(address.into())),
             _ => None,
         }

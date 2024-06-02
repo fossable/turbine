@@ -1,8 +1,9 @@
-use git2::{Repository, Oid, Commit};
 use crate::currency::Address;
-use std::error::Error;
+use git2::{Commit, Oid, Repository};
+use std::{error::Error, path::Path};
+use tracing::debug;
 
-/// 
+///
 pub struct TurbineRepo {
     /// Underlying git repository
     container: Repository,
@@ -12,10 +13,12 @@ pub struct TurbineRepo {
 }
 
 impl TurbineRepo {
-
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new<P>(path: P) -> Result<Self, Box<dyn Error>>
+    where
+        P: AsRef<Path>,
+    {
         Ok(Self {
-            container: Repository::open(todo!())?,
+            container: Repository::open(path)?,
             last: None,
         })
     }
@@ -37,7 +40,7 @@ impl TurbineRepo {
                                 revwalk.next();
                                 break;
                             }
-                        },
+                        }
                         None => {
                             // Ran out of commits before encountering "last" which
                             // means history has been changed
@@ -61,7 +64,7 @@ impl TurbineRepo {
                         Ok(paid_commit) => {
                             commits.push(paid_commit);
                         }
-                        Err(_) => {},
+                        Err(_) => {}
                     }
                 }
                 None => {
@@ -74,13 +77,11 @@ impl TurbineRepo {
 }
 
 pub struct PaidCommit {
-
     address: Address,
-    commit: Box<Commit>,
+    hash: String,
 }
 
 impl PaidCommit {
-
     pub fn try_parse(commit: Commit) -> Result<Self, Box<dyn Error>> {
         match commit.message() {
             Some(message) => {
@@ -91,12 +92,13 @@ impl PaidCommit {
                                 Some(address) => {
                                     return Ok(Self {
                                         address,
-                                        commit: Box::new(commit),
+                                        // commit: Box::new(commit),
+                                        hash: "".into(),
                                     });
                                 }
                                 None => (),
                             }
-                        },
+                        }
                         None => (),
                     }
                 }

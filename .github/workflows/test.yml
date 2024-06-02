@@ -1,0 +1,37 @@
+name: test
+permissions:
+  contents: read
+on:
+  push:
+    branches: [master]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  required:
+    runs-on: ubuntu-24.04
+    if: "!contains(github.event.head_commit.message, 'chore: release')"
+    name: ubuntu / ${{ matrix.toolchain }}
+    strategy:
+      matrix:
+        # run on stable and beta to ensure that tests won't break on the next version of the rust
+        # toolchain
+        toolchain: [stable, beta]
+    steps:
+      - run: sudo apt-get install -y libpango1.0-dev libgraphene-1.0-dev
+      - uses: actions/checkout@v4
+      - name: Install ${{ matrix.toolchain }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - name: cargo generate-lockfile
+        # enable this ci template to run regardless of whether the lockfile is checked in or not
+        if: hashFiles('Cargo.lock') == ''
+        run: cargo generate-lockfile
+      # https://twitter.com/jonhoo/status/1571290371124260865
+      - name: cargo test --locked
+        run: cargo test --locked --all-features
+      # https://github.com/rust-lang/cargo/issues/6669
+      - name: cargo test --doc
+        run: cargo test --locked --all-features --doc

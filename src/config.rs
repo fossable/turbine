@@ -1,9 +1,8 @@
+use anyhow::Result;
 use serde::Deserialize;
-use std::error::Error;
 
 #[derive(Debug, Default, Deserialize, PartialEq, Eq)]
 pub struct AppConfig {
-
     /// HTTP URL of the repository we're managing
     repo_url: String,
 
@@ -15,18 +14,23 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn load() -> Result<Self, Box<dyn Error>> {
-        config::Config::builder().add_source(config::Environment::with_prefix("TURBINE").try_parsing(true).separator("_")).build()?.try_deserialize()?
+    pub fn load() -> Result<Self> {
+        Ok(config::Config::builder()
+            .add_source(
+                config::Environment::with_prefix("TURBINE")
+                    .try_parsing(true)
+                    .separator("_"),
+            )
+            .build()?
+            .try_deserialize()?)
     }
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Eq)]
-pub struct PayoutConfig {
-}
+pub struct PayoutConfig {}
 
 #[derive(Debug, Default, Deserialize, PartialEq, Eq)]
-pub struct WalletConfig {
-}
+pub struct WalletConfig {}
 
 #[derive(Debug, Default, Deserialize, PartialEq, Eq)]
 pub struct GithubConfig {
