@@ -19,6 +19,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 cached = { version = "0.51.3", features = ["async"] }
+tempfile = "3.10.1"
 
 [features]
 monero = ["dep:monero-rpc"]

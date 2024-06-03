@@ -10,7 +10,7 @@ ADD src ./src
 ADD templates ./templates
 
 RUN rm ./target/release/deps/turbine*
-RUN cargo build --release
+RUN cargo build --release --all-features
 
 FROM debian:bookworm-slim
 ARG APP=/app
@@ -21,11 +21,11 @@ RUN apt-get update \
     && apt-get install -y bzip2 ca-certificates curl tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /turbine/target/release/turbine ${APP}/turbine
-
-WORKDIR ${APP}
-
 # Install monero wallet RPC daemon
 RUN curl https://downloads.getmonero.org/cli/monero-linux-x64-v0.18.3.3.tar.bz2 | tar --transform='flags=r;s|.*/||' -xjf - -C /usr/bin monero-x86_64-linux-gnu-v0.18.3.3/monero-wallet-rpc
 
-CMD ["./turbine", "serve"]
+# Install turbine
+COPY --from=builder /turbine/target/release/turbine ${APP}/turbine
+
+WORKDIR ${APP}
+ENTRYPOINT ["/app/turbine", "serve"]

@@ -1,10 +1,13 @@
 use crate::currency::Address;
+use anyhow::{bail, Result};
 use git2::{Commit, Oid, Repository};
-use std::{error::Error, path::Path};
+use tempfile::TempDir;
 use tracing::debug;
 
 ///
 pub struct TurbineRepo {
+    tmp: TempDir,
+
     /// Underlying git repository
     container: Repository,
 
@@ -12,18 +15,26 @@ pub struct TurbineRepo {
     last: Option<Oid>,
 }
 
+impl std::fmt::Debug for TurbineRepo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
 impl TurbineRepo {
-    pub fn new<P>(path: P) -> Result<Self, Box<dyn Error>>
-    where
-        P: AsRef<Path>,
-    {
+    pub fn new(remote: &str) -> Result<Self> {
+        let tmp = tempfile::tempdir()?;
+
+        debug!(remote = remote, dest = ?tmp.path(), "Cloning repository");
+        let container = Repository::clone(&remote, tmp.path())?;
         Ok(Self {
-            container: Repository::open(path)?,
+            tmp,
+            container,
             last: None,
         })
     }
 
-    pub fn find_paid_commits(&mut self) -> Result<Vec<PaidCommit>, Box<dyn Error>> {
+    pub fn find_paid_commits(&mut self) -> Result<Vec<PaidCommit>> {
         // Always fetch the repo first
         // TODO
 
@@ -78,11 +89,11 @@ impl TurbineRepo {
 
 pub struct PaidCommit {
     address: Address,
-    hash: String,
+    id: Oid,
 }
 
 impl PaidCommit {
-    pub fn try_parse(commit: Commit) -> Result<Self, Box<dyn Error>> {
+    pub fn try_parse(commit: Commit) -> Result<Self> {
         match commit.message() {
             Some(message) => {
                 for line in message.split("\n") {
@@ -92,8 +103,7 @@ impl PaidCommit {
                                 Some(address) => {
                                     return Ok(Self {
                                         address,
-                                        // commit: Box::new(commit),
-                                        hash: "".into(),
+                                        id: commit.id(),
                                     });
                                 }
                                 None => (),
@@ -107,6 +117,6 @@ impl PaidCommit {
                 debug!("Encountered invalid UTF-8 commit message");
             }
         }
-        return Err("No currency line found".into());
+        bail!("No currency line found");
     }
 }

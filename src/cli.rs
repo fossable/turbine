@@ -6,9 +6,11 @@ use axum::{
 };
 use clap::{Args, Parser};
 use std::{env, process::ExitCode, sync::Arc};
-use tokio::net::TcpListener;
 use tokio::spawn;
+use tokio::{net::TcpListener, sync::Mutex};
 use tracing::info;
+
+use crate::repo::TurbineRepo;
 
 #[derive(clap::Subcommand, Debug, Clone)]
 pub enum Commands {
@@ -17,33 +19,54 @@ pub enum Commands {
 
 #[derive(Debug, Clone, Args)]
 pub struct ServeArgs {
-    bind: Option<String>,
+    #[clap(long)]
+    pub repo: String,
+    #[clap(long)]
+    pub bind: Option<String>,
     // #[cfg(feature = "monero")]
     // monero_wallet_url: String,
     #[cfg(feature = "monero")]
     #[clap(long, num_args = 0)]
-    stagenet: bool,
+    pub stagenet: bool,
+
     #[cfg(feature = "monero")]
     #[clap(long, num_args = 0)]
-    testnet: bool,
+    pub testnet: bool,
+
+    #[cfg(feature = "monero")]
+    #[clap(long, default_value_t = 9000)]
+    pub monero_rpc_port: u16,
+
+    #[cfg(feature = "monero")]
+    #[clap(long, default_value = "1234")]
+    pub monero_rpc_password: String,
+
+    #[cfg(feature = "monero")]
+    #[clap(long, default_value = "/wallet")]
+    pub monero_wallet_dir: String,
+
+    #[cfg(feature = "monero")]
+    #[clap(long, default_value = "stagenet.xmr-tw.org:38081")]
+    pub monero_daemon_address: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct AppState {
+    repo: Arc<Mutex<TurbineRepo>>,
+
     #[cfg(feature = "monero")]
     pub monero: crate::currency::monero::MoneroState,
 }
 
 pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
     let state = AppState {
+        repo: Arc::new(Mutex::new(TurbineRepo::new(&args.repo)?)),
+
         #[cfg(feature = "monero")]
         monero: crate::currency::monero::MoneroState::new(&args).await?,
     };
 
     let app = Router::new().route("/", get(crate::api::index));
-
-    #[cfg(feature = "monero")]
-    let app = app.route("/xmr/provision", post(crate::currency::monero::provision));
 
     info!("Starting listener");
     let listener =
