@@ -8,6 +8,7 @@ RUN rm src/*.rs
 
 ADD src ./src
 ADD templates ./templates
+ADD assets ./assets
 
 RUN rm ./target/release/deps/turbine*
 RUN cargo build --release --all-features

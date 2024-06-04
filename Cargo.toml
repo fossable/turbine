@@ -20,6 +20,8 @@ askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 cached = { version = "0.51.3", features = ["async"] }
 tempfile = "3.10.1"
+rust-embed = { version = "8.4.0", features = ["axum", "debug-embed"] }
+mime_guess = "2.0.4"
 
 [features]
 monero = ["dep:monero-rpc"]

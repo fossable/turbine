@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="https://raw.githubusercontent.com/fossable/turbine/master/.github/images/logo-bg-256.png" />
+	<img src="https://raw.githubusercontent.com/fossable/turbine/master/.github/images/turbine-256.png" />
 </p>
 
 ![License](https://img.shields.io/github/license/fossable/turbine)
@@ -37,7 +37,7 @@ occurs, maintainers can cancel payouts or ban contributors.
 First, you need to find a repository that's hosting a `turbine`. The full list
 is currently small enough to maintain here:
 
-- https://github.com/fossable/goldboot
+- ...
 
 TODO
 

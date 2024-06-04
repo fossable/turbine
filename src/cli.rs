@@ -39,11 +39,11 @@ pub struct ServeArgs {
 
     #[cfg(feature = "monero")]
     #[clap(long, default_value = "1234")]
-    pub monero_rpc_password: String,
+    pub monero_wallet_password: String,
 
     #[cfg(feature = "monero")]
-    #[clap(long, default_value = "/wallet")]
-    pub monero_wallet_dir: String,
+    #[clap(long)]
+    pub monero_wallet: String,
 
     #[cfg(feature = "monero")]
     #[clap(long, default_value = "stagenet.xmr-tw.org:38081")]
@@ -66,7 +66,9 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
         monero: crate::currency::monero::MoneroState::new(&args).await?,
     };
 
-    let app = Router::new().route("/", get(crate::api::index));
+    let app = Router::new()
+        .route("/", get(crate::api::index))
+        .route("/assets/*file", get(crate::api::assets));
 
     info!("Starting listener");
     let listener =

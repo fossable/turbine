@@ -48,28 +48,27 @@ impl MoneroState {
                 "--non-interactive"
             })
             .arg("--password")
-            .arg(&args.monero_rpc_password)
+            .arg(&args.monero_wallet_password)
             .arg("--wallet-file")
-            .arg(format!(
-                "{}/{}",
-                &args.monero_wallet_dir,
-                std::path::PathBuf::from(&args.monero_wallet_dir)
-                    .file_name()
-                    .unwrap()
-                    .to_string_lossy()
-            ))
+            .arg(&args.monero_wallet)
             .arg("--daemon-address")
             .arg(&args.monero_daemon_address)
             .spawn()?;
 
         // Wait for the daemon to start
-        std::thread::sleep(Duration::from_secs(10));
+        std::thread::sleep(Duration::from_secs(20));
 
         debug!("Connecting to wallet RPC");
+
+        // Read credentials from file
+        let rpc_credentials =
+            &std::fs::read_to_string(format!("monero-wallet-rpc.{}.login", &args.monero_rpc_port))?;
+        let (rpc_username, rpc_password) = rpc_credentials.split_once(":").unwrap();
+
         let wallet = RpcClientBuilder::new()
             .rpc_authentication(monero_rpc::RpcAuthentication::Credentials {
-                username: "monero".to_string(),
-                password: args.monero_rpc_password.clone(),
+                username: rpc_username.to_string(),
+                password: rpc_password.to_string(),
             })
             .build(format!("http://127.0.0.1:{}", args.monero_rpc_port))?
             .wallet();
@@ -81,12 +80,7 @@ impl MoneroState {
 
         Ok(Self {
             wallet_process: Some(Arc::new(wallet_process)),
-            wallet_address: wallet
-                .get_address(0, None)
-                .await?
-                .address
-                .public_spend
-                .to_string(),
+            wallet_address: wallet.get_address(0, None).await?.address.to_string(),
             wallet,
         })
     }
