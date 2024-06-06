@@ -1,8 +1,12 @@
 use crate::currency::Address;
 use anyhow::{bail, Result};
-use git2::{Commit, Oid, Repository};
+use git2::{Commit, Oid, Repository, Revwalk};
 use tempfile::TempDir;
 use tracing::debug;
+
+pub struct Contributor {
+    pub address: Address,
+}
 
 ///
 pub struct TurbineRepo {
@@ -13,11 +17,33 @@ pub struct TurbineRepo {
 
     /// ID of the last commit we parsed
     last: Option<Oid>,
+
+    contributors: Vec<Contributor>,
 }
 
 impl std::fmt::Debug for TurbineRepo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tmp.fmt(f)
+    }
+}
+
+/// Advance a `Revwalk` past the given `Oid`.
+fn fast_forward(revwalk: &mut Revwalk, oid: &Oid) -> Result<bool> {
+    loop {
+        match revwalk.next() {
+            Some(next) => {
+                if next?.as_bytes() == oid.as_bytes() {
+                    // Move past it
+                    revwalk.next();
+                    break Ok(true);
+                }
+            }
+            None => {
+                // Ran out of commits before encountering "last" which
+                // probably means history has been changed
+                break Ok(false);
+            }
+        }
     }
 }
 
@@ -31,7 +57,32 @@ impl TurbineRepo {
             tmp,
             container,
             last: None,
+            contributors: vec![],
         })
+    }
+
+    /// Load the latest list of contributors.
+    pub fn reload_contributors(&mut self) -> Result<()> {
+        let mut revwalk = self.container.revwalk()?;
+
+        // Catch up with the last commit if there is one
+        if let Some(last) = self.last.as_ref() {
+            if !fast_forward(&mut revwalk, last)? {
+                self.contributors = Vec::new();
+                revwalk = self.container.revwalk()?;
+            }
+        }
+
+        // Now find all contributors
+        loop {
+            if let Some(next) = revwalk.next() {
+                let commit = self.container.find_commit(next?)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn find_paid_commits(&mut self) -> Result<Vec<PaidCommit>> {
@@ -40,28 +91,10 @@ impl TurbineRepo {
 
         let mut revwalk = self.container.revwalk()?;
 
-        // Catch up with the last commit
-        match self.last {
-            Some(last) => {
-                loop {
-                    match revwalk.next() {
-                        Some(next) => {
-                            if next?.as_bytes() == last.as_bytes() {
-                                // Move past it
-                                revwalk.next();
-                                break;
-                            }
-                        }
-                        None => {
-                            // Ran out of commits before encountering "last" which
-                            // means history has been changed
-                            break;
-                        }
-                    }
-                }
-            }
-            None => {
-                // This is the first run and there's nothing to catch up with
+        // Catch up with the last commit if there is one
+        if let Some(last) = self.last.as_ref() {
+            if !fast_forward(&mut revwalk, last)? {
+                todo!();
             }
         }
 

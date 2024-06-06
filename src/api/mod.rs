@@ -64,3 +64,8 @@ where
         }
     }
 }
+
+/// Refresh the turbine repo
+pub async fn refresh(State(state): State<AppState>) {
+    let mut repo = state.repo.lock().await;
+}

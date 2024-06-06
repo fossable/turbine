@@ -52,7 +52,7 @@ pub struct ServeArgs {
 
 #[derive(Clone, Debug)]
 pub struct AppState {
-    repo: Arc<Mutex<TurbineRepo>>,
+    pub repo: Arc<Mutex<TurbineRepo>>,
 
     #[cfg(feature = "monero")]
     pub monero: crate::currency::monero::MoneroState,
