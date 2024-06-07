@@ -6,6 +6,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use cached::proc_macro::once;
+use monero_rpc::monero::Amount;
 use rust_embed::Embed;
 use tracing::instrument;
 
@@ -66,6 +67,28 @@ where
 }
 
 /// Refresh the turbine repo
+#[once(time = "60")]
+#[instrument(ret)]
 pub async fn refresh(State(state): State<AppState>) {
     let mut repo = state.repo.lock().await;
+    repo.refresh().unwrap();
+
+    for contributor in repo.contributors.iter() {
+        match contributor.address.clone() {
+            crate::currency::Address::BTC(_) => todo!(),
+            crate::currency::Address::XMR(address) => {
+                let transfer_count = state.monero.count_transfers(&address).await.unwrap();
+                for commit_id in contributor.commits.iter().skip(transfer_count) {
+                    state
+                        .monero
+                        .transfer(
+                            &address,
+                            Amount::from_pico(contributor.compute_payout(commit_id.clone())),
+                        )
+                        .await
+                        .unwrap();
+                }
+            }
+        };
+    }
 }

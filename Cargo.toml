@@ -3,6 +3,10 @@ name = "turbine-git"
 version = "0.0.1"
 edition = "2021"
 
+[[bin]]
+name = "turbine"
+path = "src/main.rs"
+
 [dependencies]
 axum = "0.7.5"
 config = "0.13.3"
@@ -22,6 +26,7 @@ cached = { version = "0.51.3", features = ["async"] }
 tempfile = "3.10.1"
 rust-embed = { version = "8.4.0", features = ["axum", "debug-embed"] }
 mime_guess = "2.0.4"
+chrono = "0.4.38"
 
 [features]
 monero = ["dep:monero-rpc"]

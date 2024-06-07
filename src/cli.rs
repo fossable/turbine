@@ -21,6 +21,8 @@ pub enum Commands {
 pub struct ServeArgs {
     #[clap(long)]
     pub repo: String,
+    #[clap(long, default_value = "master")]
+    pub branch: String,
     #[clap(long)]
     pub bind: Option<String>,
     // #[cfg(feature = "monero")]
@@ -60,7 +62,7 @@ pub struct AppState {
 
 pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
     let state = AppState {
-        repo: Arc::new(Mutex::new(TurbineRepo::new(&args.repo)?)),
+        repo: Arc::new(Mutex::new(TurbineRepo::new(&args.repo, &args.branch)?)),
 
         #[cfg(feature = "monero")]
         monero: crate::currency::monero::MoneroState::new(&args).await?,
@@ -68,6 +70,7 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
 
     let app = Router::new()
         .route("/", get(crate::api::index))
+        .route("/refresh", post(crate::api::refresh))
         .route("/assets/*file", get(crate::api::assets));
 
     info!("Starting listener");
