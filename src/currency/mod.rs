@@ -1,7 +1,7 @@
 #[cfg(feature = "monero")]
 pub mod monero;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Address {
     BTC(String),
     #[cfg(feature = "monero")]

@@ -1,12 +1,13 @@
-use std::process::{Command, Stdio};
-
 use crate::currency::Address;
 use anyhow::{bail, Result};
+use base64::prelude::*;
 use chrono::{DateTime, Utc};
 use git2::{Commit, Oid, Repository, Revwalk, Sort};
+use std::process::{Command, Stdio};
 use tempfile::TempDir;
-use tracing::{debug, trace};
+use tracing::{debug, info, instrument, trace};
 
+#[derive(Debug)]
 pub struct Contributor {
     pub address: Address,
     pub last_payout: Option<DateTime<Utc>>,
@@ -18,6 +19,7 @@ pub struct Contributor {
 }
 
 impl Contributor {
+    #[instrument(ret)]
     pub fn compute_payout(&self, commit_id: Oid) -> u64 {
         // TODO
         1
@@ -46,29 +48,62 @@ impl std::fmt::Debug for TurbineRepo {
     }
 }
 
+/// Get the key ID of the public key that corresponds to the private key that
+/// signed this commit.
+#[instrument(ret, level = "trace")]
+fn get_public_key_id(commit: &Commit) -> Result<String> {
+    if let Some(header) = commit.raw_header() {
+        if let Some((_, gpgsig)) = header.split_once("gpgsig") {
+            let mut signature_base64 = String::new();
+            let mut lines = gpgsig.lines();
+            loop {
+                match lines.next() {
+                    Some(line) => {
+                        if line.starts_with("-----BEGIN") {
+                            continue;
+                        } else if line.starts_with("-----END") {
+                            break;
+                        } else {
+                            signature_base64.push_str(&line);
+                        }
+                    }
+                    None => bail!("Failed to get GPG signature"),
+                }
+            }
+
+            let decoded = BASE64_STANDARD.decode(signature_base64)?;
+            return Ok(hex::encode(&decoded[19..26]));
+        }
+    }
+    bail!("Failed to get GPG public key ID");
+}
+
 /// Verify a commit's GPG signature and return its key ID.
+#[instrument(ret)]
 fn verify_signature(commit: &Commit) -> Result<String> {
+    // Receive the public key first
+    Command::new("gpg")
+        .arg("--recv-keys")
+        .arg(get_public_key_id(&commit)?)
+        .spawn()?
+        .wait()?;
+
     let output = Command::new("git")
         .arg("verify-commit")
         .arg("--raw")
         .arg(commit.id().to_string())
         .stdout(Stdio::piped())
         .output()?;
+    let output = std::str::from_utf8(&output.stdout)?;
 
-    for line in std::str::from_utf8(&output.stdout)?.lines() {
+    trace!(output = output, "verify-commit output");
+    for line in output.lines() {
         if line.contains("GOODSIG") {
             return Ok(line.split_whitespace().nth(2).unwrap().into());
         }
     }
 
-    // Get the commit's GPG signature
-    // TODO
-    // if let Some(header) = commit.raw_header() {
-    //     if let Some((_, gpgsig)) = header.split_once("gpgsig") {
-    //         // Verify signature
-    //         // TODO
-    //     }
-    // }
+    // TODO verify the signature ourselves
     bail!("Failed to verify signature");
 }
 
@@ -78,13 +113,16 @@ impl TurbineRepo {
 
         debug!(remote = remote, dest = ?tmp.path(), "Cloning repository");
         let container = Repository::clone(&remote, tmp.path())?;
-        Ok(Self {
+        let mut repo = Self {
             branch: branch.into(),
             tmp,
             container,
             last: None,
             contributors: vec![],
-        })
+        };
+
+        repo.refresh()?;
+        Ok(repo)
     }
 
     pub fn refresh(&mut self) -> Result<()> {
@@ -114,22 +152,37 @@ impl TurbineRepo {
             if let Some(next) = revwalk.next() {
                 let commit = self.container.find_commit(next?)?;
 
+                // Check for GPG signature
+                if let Some(header) = commit.raw_header() {
+                    if !header.contains("gpgsig") {
+                        continue;
+                    }
+                }
+
                 if let Ok(key_id) = verify_signature(&commit) {
                     if let Some(message) = commit.message() {
-                        if let Some((_, address)) = message.split_once("XMR:") {
+                        if let Some((_, address)) = message.split_once("XMR") {
                             if let Some(contributor) = self
                                 .contributors
                                 .iter_mut()
                                 .find(|contributor| contributor.key_id == key_id)
                             {
+                                debug!(
+                                    old = ?contributor.address,
+                                    new = ?address,
+                                    "Updating contributor address"
+                                );
                                 contributor.address = Address::XMR(address.into());
                             } else {
-                                self.contributors.push(Contributor {
+                                let contributor = Contributor {
                                     address: Address::XMR(address.into()),
                                     last_payout: None,
                                     key_id,
                                     commits: Vec::new(),
-                                });
+                                };
+
+                                info!(contributor = ?contributor, "Adding new contributor");
+                                self.contributors.push(contributor);
                             }
                         }
                     }
@@ -146,12 +199,21 @@ impl TurbineRepo {
             match revwalk.next() {
                 Some(next) => {
                     let commit = self.container.find_commit(next?)?;
+
+                    // Check for GPG signature
+                    if let Some(header) = commit.raw_header() {
+                        if !header.contains("gpgsig") {
+                            continue;
+                        }
+                    }
+
                     if let Ok(key_id) = verify_signature(&commit) {
                         if let Some(contributor) = self
                             .contributors
                             .iter_mut()
                             .find(|contributor| contributor.key_id == key_id)
                         {
+                            info!(contributor = ?contributor, commit = ?commit, "Found new paid commit");
                             contributor.commits.push(commit.id());
                         }
                     }

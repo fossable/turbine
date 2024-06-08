@@ -19,7 +19,7 @@ EXPOSE 80
 ENV TZ=Etc/UTC
 
 RUN apt-get update \
-    && apt-get install -y bzip2 ca-certificates curl tzdata \
+    && apt-get install -y bzip2 ca-certificates curl tzdata git gpg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install monero wallet RPC daemon

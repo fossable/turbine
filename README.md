@@ -32,6 +32,12 @@ It's up to the discretion of the person that merges PRs to make sure contributor
 aren't unfairly boosting their rewards. In the event that such an injustice
 occurs, maintainers can cancel payouts or ban contributors.
 
+### What if the `turbine` owner steals the project's funds?
+
+Since `turbine` is self-hosted, the crypto wallet is fully under control of the
+project owner. We have to trust them not to misuse funds deposited in `turbine`,
+just like we have to trust them not to include a backdoor in the software.
+
 ## Using `turbine` as a contributor
 
 First, you need to find a repository that's hosting a `turbine`. The full list
@@ -41,6 +47,11 @@ is currently small enough to maintain here:
 
 TODO
 
+### Setup commit signing
+
+
+
 ## Running your own `turbine`
 
+### Create a new wallet
 TODO
