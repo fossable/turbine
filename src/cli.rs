@@ -1,16 +1,17 @@
+use crate::repo::TurbineRepo;
 use anyhow::Result;
 use axum::{
     extract::FromRef,
     routing::{get, post},
     Router,
 };
+use chrono::Utc;
 use clap::{Args, Parser};
 use std::{env, process::ExitCode, sync::Arc};
 use tokio::spawn;
 use tokio::{net::TcpListener, sync::Mutex};
+use tokio_schedule::{every, Job};
 use tracing::info;
-
-use crate::repo::TurbineRepo;
 
 #[derive(clap::Subcommand, Debug, Clone)]
 pub enum Commands {
@@ -72,6 +73,20 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
         .route("/", get(crate::api::index))
         .route("/refresh", post(crate::api::refresh))
         .route("/assets/*file", get(crate::api::assets));
+
+    // Refresh every hour
+    let every_hour = every(1)
+        .hour()
+        .at(10, 30)
+        .in_timezone(&Utc)
+        .perform(|| async {
+            reqwest::Client::new()
+                .post("http://127.0.0.1:3000/refresh")
+                .send()
+                .await
+                .unwrap();
+        });
+    tokio::spawn(every_hour);
 
     info!("Starting listener");
     let listener =

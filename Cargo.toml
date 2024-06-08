@@ -27,6 +27,7 @@ tempfile = "3.10.1"
 rust-embed = { version = "8.4.0", features = ["axum", "debug-embed"] }
 mime_guess = "2.0.4"
 chrono = "0.4.38"
+tokio_schedule = "0.3.1"
 
 [features]
 monero = ["dep:monero-rpc"]

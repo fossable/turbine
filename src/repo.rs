@@ -19,7 +19,8 @@ pub struct Contributor {
 
 impl Contributor {
     pub fn compute_payout(&self, commit_id: Oid) -> u64 {
-        todo!()
+        // TODO
+        1
     }
 }
 
@@ -88,7 +89,10 @@ impl TurbineRepo {
 
     pub fn refresh(&mut self) -> Result<()> {
         // Always fetch the repo first
-        // TODO
+        debug!("Fetching upstream repo");
+        self.container
+            .find_remote("origin")?
+            .fetch(&[self.branch.clone()], None, None)?;
 
         let mut revwalk = self.container.revwalk()?;
         revwalk.set_sorting(Sort::REVERSE)?;

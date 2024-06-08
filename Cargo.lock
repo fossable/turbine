@@ -2391,6 +2391,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio_schedule"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b4a14ab1658c39d137ebcc5fbaab364c9922a6cc04ab48b364546c2e6022256"
+dependencies = [
+ "chrono",
+ "tokio",
+]
+
+[[package]]
 name = "toml"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2516,6 +2526,7 @@ dependencies = [
  "serde",
  "tempfile",
  "tokio",
+ "tokio_schedule",
  "tracing",
  "tracing-subscriber",
 ]
