@@ -55,56 +55,23 @@ fn get_public_key_id(commit: &Commit) -> Result<String> {
     if let Some(header) = commit.raw_header() {
         if let Some((_, gpgsig)) = header.split_once("gpgsig") {
             let mut signature_base64 = String::new();
-            let mut lines = gpgsig.lines();
-            loop {
-                match lines.next() {
-                    Some(line) => {
-                        if line.starts_with("-----BEGIN") {
-                            continue;
-                        } else if line.starts_with("-----END") {
-                            break;
-                        } else {
-                            signature_base64.push_str(&line);
-                        }
-                    }
-                    None => bail!("Failed to get GPG signature"),
+            for line in gpgsig.lines() {
+                let line = line.trim();
+                if line.starts_with("-----BEGIN") {
+                    continue;
+                } else if line.starts_with("=") {
+                    // Ascii armor checksum means we're done
+                    break;
+                } else {
+                    signature_base64.push_str(&line);
                 }
             }
 
             let decoded = BASE64_STANDARD.decode(signature_base64)?;
-            return Ok(hex::encode(&decoded[19..26]));
+            return Ok(hex::encode(&decoded[12..32]));
         }
     }
     bail!("Failed to get GPG public key ID");
-}
-
-/// Verify a commit's GPG signature and return its key ID.
-#[instrument(ret)]
-fn verify_signature(commit: &Commit) -> Result<String> {
-    // Receive the public key first
-    Command::new("gpg")
-        .arg("--recv-keys")
-        .arg(get_public_key_id(&commit)?)
-        .spawn()?
-        .wait()?;
-
-    let output = Command::new("git")
-        .arg("verify-commit")
-        .arg("--raw")
-        .arg(commit.id().to_string())
-        .stdout(Stdio::piped())
-        .output()?;
-    let output = std::str::from_utf8(&output.stdout)?;
-
-    trace!(output = output, "verify-commit output");
-    for line in output.lines() {
-        if line.contains("GOODSIG") {
-            return Ok(line.split_whitespace().nth(2).unwrap().into());
-        }
-    }
-
-    // TODO verify the signature ourselves
-    bail!("Failed to verify signature");
 }
 
 impl TurbineRepo {
@@ -123,6 +90,33 @@ impl TurbineRepo {
 
         repo.refresh()?;
         Ok(repo)
+    }
+
+    /// Verify a commit's GPG signature and return its key ID.
+    #[instrument(ret)]
+    fn verify_signature(&self, commit: &Commit) -> Result<String> {
+        // Receive the public key first
+        Command::new("gpg")
+            .arg("--keyserver")
+            .arg("hkp://keys.gnupg.net")
+            .arg("--recv-keys")
+            .arg(get_public_key_id(&commit)?)
+            .spawn()?
+            .wait()?;
+
+        // TODO verify the signature ourselves (gpgme?)
+        if Command::new("git")
+            .arg("verify-commit")
+            .arg(commit.id().to_string())
+            .current_dir(self.tmp.path())
+            .spawn()?
+            .wait()?
+            .success()
+        {
+            Ok(get_public_key_id(&commit)?)
+        } else {
+            bail!("Failed to verify signature");
+        }
     }
 
     pub fn refresh(&mut self) -> Result<()> {
@@ -159,9 +153,10 @@ impl TurbineRepo {
                     }
                 }
 
-                if let Ok(key_id) = verify_signature(&commit) {
+                if let Ok(key_id) = self.verify_signature(&commit) {
                     if let Some(message) = commit.message() {
                         if let Some((_, address)) = message.split_once("XMR") {
+                            let address = address.trim().to_string();
                             if let Some(contributor) = self
                                 .contributors
                                 .iter_mut()
@@ -172,10 +167,10 @@ impl TurbineRepo {
                                     new = ?address,
                                     "Updating contributor address"
                                 );
-                                contributor.address = Address::XMR(address.into());
+                                contributor.address = Address::XMR(address);
                             } else {
                                 let contributor = Contributor {
-                                    address: Address::XMR(address.into()),
+                                    address: Address::XMR(address),
                                     last_payout: None,
                                     key_id,
                                     commits: Vec::new(),
@@ -207,7 +202,7 @@ impl TurbineRepo {
                         }
                     }
 
-                    if let Ok(key_id) = verify_signature(&commit) {
+                    if let Ok(key_id) = self.verify_signature(&commit) {
                         if let Some(contributor) = self
                             .contributors
                             .iter_mut()

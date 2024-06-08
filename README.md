@@ -36,7 +36,7 @@ occurs, maintainers can cancel payouts or ban contributors.
 
 Since `turbine` is self-hosted, the crypto wallet is fully under control of the
 project owner. We have to trust them not to misuse funds deposited in `turbine`,
-just like we have to trust them not to include a backdoor in the software.
+just like we have to trust them not to include a backdoor in the software (for example).
 
 ## Using `turbine` as a contributor
 
@@ -47,9 +47,47 @@ is currently small enough to maintain here:
 
 TODO
 
+### Generate a GPG keypair
+
+If you don't already have a GPG keypair, generate a new one:
+
+```
+gpg --full-generate-key
+```
+
+Make sure to use the same email address as your git config: `git config user.email`.
+
 ### Setup commit signing
 
+Turn on commit signing globally (or on a per-repo basis):
 
+```
+git config --global commit.gpgsign true
+git config --global user.signingkey <public key ID>
+```
+
+### Send your public key to a keyserver
+
+To allow `turbine` to find your public key and verify commits, upload it to this
+keyserver:
+
+```
+gpg --keyserver hkp://keys.gnupg.net --send-keys <public key ID>
+```
+
+### Commit your payment address
+
+Add your payment address to a signed commit message so `turbine` knows who to pay.
+If you ever update your GPG key or wallet address, this commit can be made multiple
+times and the last one takes effect.
+
+```
+git commit --allow-empty -m "turbine: XMR <wallet address>"
+```
+
+### Start contributing!
+
+Contribute as normal and `turbine` will pay you automatically.
 
 ## Running your own `turbine`
 

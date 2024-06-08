@@ -118,7 +118,7 @@ impl MoneroState {
 
         Ok(transfers
             .get(&GetTransfersCategory::Out)
-            .unwrap()
+            .unwrap_or(&vec![])
             .iter()
             .filter(|transfer| transfer.address.to_string() == address.to_string())
             .count())
