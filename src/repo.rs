@@ -39,6 +39,9 @@ pub struct TurbineRepo {
     /// ID of the last commit we parsed
     last: Option<Oid>,
 
+    /// Last time we refreshed
+    last_refresh: Option<DateTime<Utc>>,
+
     pub contributors: Vec<Contributor>,
 }
 
@@ -86,6 +89,7 @@ impl TurbineRepo {
             container,
             last: None,
             contributors: vec![],
+            last_refresh: None,
         };
 
         repo.refresh()?;
@@ -220,6 +224,8 @@ impl TurbineRepo {
                 }
             }
         }
+
+        self.last_refresh = Some(Utc::now());
         Ok(())
     }
 }

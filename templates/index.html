@@ -10,11 +10,13 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f0f0f0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      background-color: #333333;
+      background-size: 80px 80px;
+      background-image: linear-gradient(to right, #4a4a4a 1px, transparent 1px), linear-gradient(to bottom, #4a4a4a 1px, transparent 1px);
     }
 
     .container {
@@ -60,7 +62,55 @@
 
     .logo-svg {
       margin-top: 40px;
-      max-width: 300px;
+      max-width: 400px;
+    }
+
+    .svg-monero {
+      max-width: 20px;
+      max-height: 20px;
+    }
+
+    .svg-copy {
+      max-width: 20px;
+      max-height: 20px;
+    }
+
+    .address {
+      white-space: nowrap;
+    }
+
+    .balance-positive {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      color: #2ecc71;
+    }
+
+    .balance-zero {
+      color: #7f8c8d;
+    }
+
+    #wallet-address {
+      width: 80px;
+    }
+
+    .list-container {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .list-item {
+      padding: 5px 0;
+      /* Optional: Add padding */
+      border-bottom: 1px solid #eee;
+      /* Optional: Add a border between items */
     }
   </style>
 </head>
@@ -71,11 +121,32 @@
       <img src="/assets/turbine.svg">
     </div>
     <div class="wallet-info">
-      <p>Current Balance: {{ monero_balance }}</p>
-      <p>Wallet Address:</p>
-      <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
-      <button class="copy-button" onclick="copyAddress()">Copy Address</button>
+      <p>Network: {{ monero_network }}</p>
+      <p>Balance:</p>
+      {% if monero_balance != "0" %}
+      <p class="balance-positive">{{ monero_balance }}</p>
+      {% else %}
+      <p class="balance-zero">{{ monero_balance }}</p>
+      {% endif %}
+      <img class="svg-monero" src="/assets/monero.svg">
+      <div class="address">
+        <p style="display: inline;">Address:</p>
+        <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
+        <button class="copy-button" onclick="copyAddress()">
+          <img class="svg-copy" src="/assets/copy.svg">
+        </button>
+      </div>
     </div>
+  </div>
+  <div class="list-container">
+    <ul>
+      <li class="list-item">Item 1</li>
+      <li class="list-item">Item 2</li>
+      <li class="list-item">Item 3</li>
+      <li class="list-item">Item 4</li>
+      <li class="list-item">Item 5</li>
+      <!-- Add more list items as needed -->
+    </ul>
   </div>
 
   <script>
@@ -83,7 +154,7 @@
       const addressInput = document.getElementById('wallet-address');
       addressInput.select();
       document.execCommand('copy');
-      alert('Address copied to clipboard!');
+      alert('Copied to clipboard!');
     }
   </script>
 </body>

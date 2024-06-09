@@ -8,8 +8,8 @@ use axum::{
 use cached::proc_macro::once;
 use monero_rpc::{
     monero::{Address, Amount},
-    GetTransfersCategory, GetTransfersSelector, RpcClientBuilder, TransferOptions,
-    TransferPriority, WalletClient,
+    AddressData, GetTransfersCategory, GetTransfersSelector, RestoreDeterministicWalletArgs,
+    RpcClientBuilder, TransferOptions, TransferPriority, WalletClient,
 };
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -25,7 +25,7 @@ use tracing::{debug, info, instrument};
 pub struct MoneroState {
     wallet: WalletClient,
     wallet_process: Option<Arc<Child>>,
-    pub wallet_address: String,
+    pub wallet_address: Address,
     account_index: u32,
 }
 
@@ -53,10 +53,8 @@ impl MoneroState {
                 // TODO hack
                 "--non-interactive"
             })
-            .arg("--password")
-            .arg(&args.monero_wallet_password)
-            .arg("--wallet-file")
-            .arg(&args.monero_wallet)
+            .arg("--wallet-dir")
+            .arg("/wallets")
             .arg("--daemon-address")
             .arg(&args.monero_daemon_address)
             .spawn()?;
@@ -79,6 +77,24 @@ impl MoneroState {
             .build(format!("http://127.0.0.1:{}", args.monero_rpc_port))?
             .wallet();
 
+        if args.monero_wallet_seed {
+            debug!("Restoring wallet from mnemonic seed phrase");
+            wallet
+                .restore_deterministic_wallet(RestoreDeterministicWalletArgs {
+                    autosave_current: None,
+                    filename: "turbine".into(),
+                    password: args.monero_wallet_password.clone(),
+                    restore_height: None,
+                    seed: std::env::var("MONERO_WALLET_SEED")?,
+                    seed_offset: None,
+                })
+                .await?;
+        } else if let Some(path) = args.monero_wallet_path.as_ref() {
+            wallet
+                .open_wallet(path.to_owned(), Some(args.monero_wallet_password.clone()))
+                .await?;
+        }
+
         info!(
             block_height = wallet.get_height().await?,
             "Connected to wallet RPC"
@@ -86,7 +102,7 @@ impl MoneroState {
 
         Ok(Self {
             wallet_process: Some(Arc::new(wallet_process)),
-            wallet_address: wallet.get_address(0, None).await?.address.to_string(),
+            wallet_address: wallet.get_address(0, None).await?.address,
             wallet,
             account_index: 0,
         })
@@ -106,12 +122,7 @@ impl MoneroState {
             .get_transfers(GetTransfersSelector {
                 category_selector: HashMap::from([(GetTransfersCategory::Out, true)]),
                 account_index: Some(self.account_index),
-                subaddr_indices: Some(vec![
-                    self.wallet
-                        .get_address_index(Address::from_str(address)?)
-                        .await?
-                        .minor,
-                ]),
+                subaddr_indices: None,
                 block_height_filter: None,
             })
             .await?;

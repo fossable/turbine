@@ -827,6 +827,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fb8d784f27acf97159b40fc4db5ecd8aa23b9ad5ef69cdd136d3bc80665f0c0"
 
 [[package]]
+name = "git-turbine"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "askama",
+ "askama_axum",
+ "axum",
+ "base64 0.22.1",
+ "cached",
+ "chrono",
+ "clap",
+ "config",
+ "git2",
+ "hex",
+ "mime_guess",
+ "monero",
+ "monero-rpc",
+ "reqwest 0.12.4",
+ "rust-embed",
+ "serde",
+ "tempfile",
+ "tokio",
+ "tokio_schedule",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "git2"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1390,9 +1418,9 @@ dependencies = [
 
 [[package]]
 name = "monero"
-version = "0.19.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdf671c5fd0fa1f1dcc2495b6ca97a83f0aa6b2a737957e773d34c6c6bac0659"
+checksum = "f25218523ad4a171ddda05251669afb788cdc2f0df94082aab856a2b09541c3f"
 dependencies = [
  "base58-monero",
  "curve25519-dalek",
@@ -1407,35 +1435,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "monero"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f25218523ad4a171ddda05251669afb788cdc2f0df94082aab856a2b09541c3f"
-dependencies = [
- "base58-monero",
- "curve25519-dalek",
- "fixed-hash",
- "hex",
- "hex-literal",
- "sealed",
- "thiserror",
- "tiny-keccak",
-]
-
-[[package]]
 name = "monero-rpc"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42ab91b152e84b5393c9373cddce271d1cf8290e388e21b8800abc614d75c1dc"
+source = "git+https://github.com/cilki/monero-rpc-rs?branch=add_restore_deterministic_wallet#c303e8d8495857b161aa8e68b49494a32645b4d3"
 dependencies = [
  "anyhow",
  "chrono",
  "diqwest",
  "fixed-hash",
  "hex",
- "http 0.2.9",
+ "http 1.1.0",
  "jsonrpc-core",
- "monero 0.19.0",
+ "monero",
  "reqwest 0.11.22",
  "serde",
  "serde_json",
@@ -2504,34 +2515,6 @@ name = "try-lock"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
-
-[[package]]
-name = "turbine-git"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "askama",
- "askama_axum",
- "axum",
- "base64 0.22.1",
- "cached",
- "chrono",
- "clap",
- "config",
- "git2",
- "hex",
- "mime_guess",
- "monero 0.21.0",
- "monero-rpc",
- "reqwest 0.12.4",
- "rust-embed",
- "serde",
- "tempfile",
- "tokio",
- "tokio_schedule",
- "tracing",
- "tracing-subscriber",
-]
 
 [[package]]
 name = "typenum"

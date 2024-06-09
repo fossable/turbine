@@ -1,5 +1,5 @@
 [package]
-name = "turbine-git"
+name = "git-turbine"
 version = "0.0.1"
 edition = "2021"
 
@@ -14,7 +14,7 @@ git2 = "0.18.1"
 anyhow = "1.0.86"
 clap = { version = "4.5.4", features = ["string", "derive"] }
 monero = "0.21.0"
-monero-rpc = { version = "0.4.0", features = ["rpc_authentication"], optional = true }
+monero-rpc = { git = "https://github.com/cilki/monero-rpc-rs", branch = "add_restore_deterministic_wallet", features = ["rpc_authentication"], optional = true }
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.203", features = ["derive"] }
 tokio = { version = "1.37.0", features = ["full"] }

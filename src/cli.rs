@@ -41,12 +41,18 @@ pub struct ServeArgs {
     pub monero_rpc_port: u16,
 
     #[cfg(feature = "monero")]
-    #[clap(long, default_value = "1234")]
+    #[clap(long)]
     pub monero_wallet_password: String,
 
     #[cfg(feature = "monero")]
-    #[clap(long)]
-    pub monero_wallet: String,
+    #[clap(long, conflicts_with = "monero_wallet_seed")]
+    pub monero_wallet_path: Option<String>,
+
+    /// Restore wallet from a mnemonic seed phrase given by the environment variable:
+    /// MONERO_WALLET_SEED.
+    #[cfg(feature = "monero")]
+    #[clap(long, conflicts_with = "monero_wallet_path", default_value_t = false)]
+    pub monero_wallet_seed: bool,
 
     #[cfg(feature = "monero")]
     #[clap(long, default_value = "stagenet.xmr-tw.org:38081")]

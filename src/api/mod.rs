@@ -3,12 +3,17 @@ use askama_axum::Template;
 use axum::extract::State;
 use axum::{
     http::{header, StatusCode, Uri},
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Response},
 };
 use cached::proc_macro::once;
 use monero_rpc::monero::Amount;
 use rust_embed::Embed;
 use tracing::instrument;
+
+#[derive(Debug, Clone)]
+pub struct Transaction {
+    pub amount: String,
+}
 
 #[derive(Template, Debug, Clone)]
 #[template(path = "index.html")]
@@ -17,6 +22,10 @@ pub struct IndexTemplate {
     monero_balance: String,
     #[cfg(feature = "monero")]
     monero_wallet_address: String,
+    #[cfg(feature = "monero")]
+    monero_network: String,
+
+    transactions: Vec<Transaction>,
 }
 
 #[once(time = "60")]
@@ -24,9 +33,19 @@ pub struct IndexTemplate {
 pub async fn index(State(state): State<AppState>) -> IndexTemplate {
     IndexTemplate {
         #[cfg(feature = "monero")]
-        monero_balance: format!("{}", state.monero.get_balance().await.unwrap()),
+        monero_balance: format!(
+            "{:.2e}",
+            state.monero.get_balance().await.unwrap() as f64 / f64::powf(10.0, 12.0)
+        ),
         #[cfg(feature = "monero")]
-        monero_wallet_address: state.monero.wallet_address.clone(),
+        monero_wallet_address: state.monero.wallet_address.to_string(),
+        monero_network: match state.monero.wallet_address.network {
+            monero_rpc::monero::Network::Mainnet => "Main",
+            monero_rpc::monero::Network::Stagenet => "Stage",
+            monero_rpc::monero::Network::Testnet => "Test",
+        }
+        .to_string(),
+        transactions: Vec::new(),
     }
 }
 
