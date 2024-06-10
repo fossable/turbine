@@ -40,6 +40,11 @@ pub struct ServeArgs {
     #[clap(long, default_value_t = 9000)]
     pub monero_rpc_port: u16,
 
+    /// Minimum block height
+    #[cfg(feature = "monero")]
+    #[clap(long, default_value_t = 3167951)]
+    pub monero_block_height: u64,
+
     #[cfg(feature = "monero")]
     #[clap(long)]
     pub monero_wallet_password: String,
@@ -51,7 +56,12 @@ pub struct ServeArgs {
     /// Restore wallet from a mnemonic seed phrase given by the environment variable:
     /// MONERO_WALLET_SEED.
     #[cfg(feature = "monero")]
-    #[clap(long, conflicts_with = "monero_wallet_path", default_value_t = false)]
+    #[clap(
+        long,
+        num_args = 0,
+        conflicts_with = "monero_wallet_path",
+        default_value_t = false
+    )]
     pub monero_wallet_seed: bool,
 
     #[cfg(feature = "monero")]

@@ -1,17 +1,11 @@
 use crate::{cli::ServeArgs, CommandLine};
 use anyhow::Result;
-use axum::{
-    extract::{FromRef, State},
-    http::StatusCode,
-    Json,
-};
-use cached::proc_macro::once;
 use monero_rpc::{
     monero::{Address, Amount},
-    AddressData, GetTransfersCategory, GetTransfersSelector, RestoreDeterministicWalletArgs,
-    RpcClientBuilder, TransferOptions, TransferPriority, WalletClient,
+    AddressData, BlockHeightFilter, GetTransfersCategory, GetTransfersSelector, GotTransfer,
+    RestoreDeterministicWalletArgs, RpcClientBuilder, TransferOptions, TransferPriority,
+    WalletClient,
 };
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::{
     collections::HashMap,
@@ -23,10 +17,11 @@ use tracing::{debug, info, instrument};
 
 #[derive(Clone, Debug)]
 pub struct MoneroState {
-    wallet: WalletClient,
+    pub wallet: WalletClient,
     wallet_process: Option<Arc<Child>>,
     pub wallet_address: Address,
     account_index: u32,
+    minimum_block_height: u64,
 }
 
 // impl Drop for MoneroState {
@@ -84,7 +79,7 @@ impl MoneroState {
                     autosave_current: None,
                     filename: "turbine".into(),
                     password: args.monero_wallet_password.clone(),
-                    restore_height: None,
+                    restore_height: Some(args.monero_block_height),
                     seed: std::env::var("MONERO_WALLET_SEED")?,
                     seed_offset: None,
                 })
@@ -105,17 +100,17 @@ impl MoneroState {
             wallet_address: wallet.get_address(0, None).await?.address,
             wallet,
             account_index: 0,
+            minimum_block_height: args.monero_block_height,
         })
     }
 
-    #[instrument(ret)]
     pub async fn get_balance(&self) -> Result<u64> {
         let balance = self.wallet.get_balance(self.account_index, None).await?;
+        debug!(balance = ?balance, "Current Monero wallet balance");
         Ok(balance.unlocked_balance.as_pico())
     }
 
     /// Count outbound transfers to the given address.
-    #[instrument(ret)]
     pub async fn count_transfers(&self, address: &str) -> Result<usize> {
         let transfers = self
             .wallet
@@ -123,7 +118,10 @@ impl MoneroState {
                 category_selector: HashMap::from([(GetTransfersCategory::Out, true)]),
                 account_index: Some(self.account_index),
                 subaddr_indices: None,
-                block_height_filter: None,
+                block_height_filter: Some(BlockHeightFilter {
+                    min_height: Some(self.minimum_block_height),
+                    max_height: None,
+                }),
             })
             .await?;
 
@@ -135,8 +133,30 @@ impl MoneroState {
             .count())
     }
 
-    #[instrument(ret)]
+    /// Get all outbound transfers.
+    pub async fn get_transfers(&self) -> Result<Vec<GotTransfer>> {
+        let transfers = self
+            .wallet
+            .get_transfers(GetTransfersSelector {
+                category_selector: HashMap::from([(GetTransfersCategory::Out, true)]),
+                account_index: Some(self.account_index),
+                subaddr_indices: None,
+                block_height_filter: Some(BlockHeightFilter {
+                    min_height: Some(self.minimum_block_height),
+                    max_height: None,
+                }),
+            })
+            .await?;
+
+        Ok(transfers
+            .get(&GetTransfersCategory::Out)
+            .unwrap_or(&vec![])
+            .to_owned())
+    }
+
+    /// Transfer the given amount of Monero.
     pub async fn transfer(&self, address: &str, amount: Amount) -> Result<()> {
+        info!(amount = ?amount, dest = ?address, "Transferring Monero");
         self.wallet
             .transfer(
                 HashMap::from([(Address::from_str(address)?, amount)]),

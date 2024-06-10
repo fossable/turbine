@@ -6,30 +6,27 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use cached::proc_macro::once;
-use monero_rpc::monero::Amount;
+use chrono::{DateTime, Utc};
 use rust_embed::Embed;
 use tracing::instrument;
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
     pub amount: String,
+    pub timestamp: u64,
 }
 
-#[derive(Template, Debug, Clone)]
+#[derive(Template, Debug, Clone, Default)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
-    #[cfg(feature = "monero")]
     monero_balance: String,
-    #[cfg(feature = "monero")]
     monero_wallet_address: String,
-    #[cfg(feature = "monero")]
     monero_network: String,
-
+    monero_block_height: u64,
     transactions: Vec<Transaction>,
 }
 
 #[once(time = "60")]
-#[instrument(ret)]
 pub async fn index(State(state): State<AppState>) -> IndexTemplate {
     IndexTemplate {
         #[cfg(feature = "monero")]
@@ -39,13 +36,20 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
         ),
         #[cfg(feature = "monero")]
         monero_wallet_address: state.monero.wallet_address.to_string(),
+        #[cfg(feature = "monero")]
         monero_network: match state.monero.wallet_address.network {
             monero_rpc::monero::Network::Mainnet => "Main",
             monero_rpc::monero::Network::Stagenet => "Stage",
             monero_rpc::monero::Network::Testnet => "Test",
         }
         .to_string(),
-        transactions: Vec::new(),
+        #[cfg(feature = "monero")]
+        monero_block_height: state.monero.wallet.get_height().await.unwrap().get(),
+        transactions: vec![Transaction {
+            amount: "123".into(),
+            timestamp: 123,
+        }],
+        ..Default::default()
     }
 }
 
@@ -95,6 +99,7 @@ pub async fn refresh(State(state): State<AppState>) {
     for contributor in repo.contributors.iter() {
         match contributor.address.clone() {
             crate::currency::Address::BTC(_) => todo!(),
+            #[cfg(feature = "monero")]
             crate::currency::Address::XMR(address) => {
                 let transfer_count = state.monero.count_transfers(&address).await.unwrap();
                 for commit_id in contributor.commits.iter().skip(transfer_count) {
@@ -102,7 +107,9 @@ pub async fn refresh(State(state): State<AppState>) {
                         .monero
                         .transfer(
                             &address,
-                            Amount::from_pico(contributor.compute_payout(commit_id.clone())),
+                            monero::Amount::from_pico(
+                                contributor.compute_payout(commit_id.clone()),
+                            ),
                         )
                         .await
                         .unwrap();

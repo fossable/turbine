@@ -19,6 +19,20 @@
       background-image: linear-gradient(to right, #4a4a4a 1px, transparent 1px), linear-gradient(to bottom, #4a4a4a 1px, transparent 1px);
     }
 
+    ul {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    li {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      color: #2ecc71;
+      background-color: #dff0d8;
+    }
+
     .container {
       text-align: center;
       background-color: #fff;
@@ -104,6 +118,7 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-left: 20px;
     }
 
     .list-item {
@@ -121,7 +136,7 @@
       <img src="/assets/turbine.svg">
     </div>
     <div class="wallet-info">
-      <p>Network: {{ monero_network }}</p>
+      <p>Network: {{ monero_network }} ({{ monero_block_height }})</p>
       <p>Balance:</p>
       {% if monero_balance != "0" %}
       <p class="balance-positive">{{ monero_balance }}</p>
@@ -140,12 +155,9 @@
   </div>
   <div class="list-container">
     <ul>
-      <li class="list-item">Item 1</li>
-      <li class="list-item">Item 2</li>
-      <li class="list-item">Item 3</li>
-      <li class="list-item">Item 4</li>
-      <li class="list-item">Item 5</li>
-      <!-- Add more list items as needed -->
+      {% for transaction in transactions %}
+      <li class="list-item">{{ transaction.amount }}</li>
+      {% endfor %}
     </ul>
   </div>
 

@@ -97,7 +97,7 @@ impl TurbineRepo {
     }
 
     /// Verify a commit's GPG signature and return its key ID.
-    #[instrument(ret)]
+    #[instrument(ret, level = "trace")]
     fn verify_signature(&self, commit: &Commit) -> Result<String> {
         // Receive the public key first
         Command::new("gpg")
@@ -159,6 +159,7 @@ impl TurbineRepo {
 
                 if let Ok(key_id) = self.verify_signature(&commit) {
                     if let Some(message) = commit.message() {
+                        #[cfg(feature = "monero")]
                         if let Some((_, address)) = message.split_once("XMR") {
                             let address = address.trim().to_string();
                             if let Some(contributor) = self
