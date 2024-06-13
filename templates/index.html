@@ -19,6 +19,13 @@
       background-image: linear-gradient(to right, #4a4a4a 1px, transparent 1px), linear-gradient(to bottom, #4a4a4a 1px, transparent 1px);
     }
 
+    .github-link {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
     ul {
       list-style-type: none;
       display: flex;
@@ -34,6 +41,11 @@
     }
 
     .container {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-block {
       text-align: center;
       background-color: #fff;
       padding: 20px;
@@ -108,7 +120,17 @@
       width: 80px;
     }
 
-    .list-container {
+    .summary-block {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .transaction-block {
       height: 200px;
       overflow-y: auto;
       border: 1px solid #ccc;
@@ -123,42 +145,50 @@
 
     .list-item {
       padding: 5px 0;
-      /* Optional: Add padding */
       border-bottom: 1px solid #eee;
-      /* Optional: Add a border between items */
     }
   </style>
 </head>
 
 <body>
+  <a href="https://github.com/fossable/turbine" target="_blank" class="github-link">
+    <img src="/assets/github.svg" alt="GitHub" width="40" height="40">
+  </a>
   <div class="container">
-    <div class="logo-svg">
-      <img src="/assets/turbine.svg">
+    <div class="header-block">
+      <div class="logo-svg">
+        <img src="/assets/turbine.svg">
+      </div>
+      <p>Repository: {{ repo_url }}</p>
     </div>
-    <div class="wallet-info">
-      <p>Network: {{ monero_network }} ({{ monero_block_height }})</p>
-      <p>Balance:</p>
-      {% if monero_balance != "0" %}
-      <p class="balance-positive">{{ monero_balance }}</p>
-      {% else %}
-      <p class="balance-zero">{{ monero_balance }}</p>
-      {% endif %}
-      <img class="svg-monero" src="/assets/monero.svg">
-      <div class="address">
-        <p style="display: inline;">Address:</p>
-        <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
-        <button class="copy-button" onclick="copyAddress()">
-          <img class="svg-copy" src="/assets/copy.svg">
-        </button>
+    {% if monero_enabled %}
+    <div style="display: flex; direction: row;">
+      <div class="summary-block">
+        <p>Balance:</p>
+        {% if monero_balance != "0" %}
+        <p class="balance-positive">{{ monero_balance }} (${{ usd_balance }})</p>
+        {% else %}
+        <p class="balance-zero">{{ monero_balance }}</p>
+        {% endif %}
+        <img class="svg-monero" src="/assets/monero.svg">
+        <p>Network: {{ monero_network }} ({{ monero_block_height }})</p>
+        <div class="address">
+          <p style="display: inline;">Address:</p>
+          <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
+          <button class="copy-button" onclick="copyAddress()">
+            <img class="svg-copy" src="/assets/copy.svg">
+          </button>
+        </div>
+      </div>
+      <div class="transaction-block">
+        <ul>
+          {% for transaction in transactions %}
+          <li class="list-item">{{ transaction.amount }}</li>
+          {% endfor %}
+        </ul>
       </div>
     </div>
-  </div>
-  <div class="list-container">
-    <ul>
-      {% for transaction in transactions %}
-      <li class="list-item">{{ transaction.amount }}</li>
-      {% endfor %}
-    </ul>
+    {% endif %}
   </div>
 
   <script>

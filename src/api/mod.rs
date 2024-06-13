@@ -20,22 +20,24 @@ pub struct Transaction {
 #[template(path = "index.html")]
 pub struct IndexTemplate {
     monero_balance: String,
-    monero_wallet_address: String,
-    monero_network: String,
+    monero_enabled: bool,
     monero_block_height: u64,
+    monero_network: String,
+    monero_wallet_address: String,
+    repository_url: String,
     transactions: Vec<Transaction>,
+    usd_balance: String,
 }
 
 #[once(time = "60")]
 pub async fn index(State(state): State<AppState>) -> IndexTemplate {
+    let monero_balance = state.monero.get_balance().await.unwrap() as f64 / f64::powf(10.0, 12.0);
     IndexTemplate {
+        monero_enabled: cfg!(feature = "monero"),
         #[cfg(feature = "monero")]
-        monero_balance: format!(
-            "{:.2e}",
-            state.monero.get_balance().await.unwrap() as f64 / f64::powf(10.0, 12.0)
-        ),
+        monero_balance: format!("{:.2e}", monero_balance),
         #[cfg(feature = "monero")]
-        monero_wallet_address: state.monero.wallet_address.to_string(),
+        monero_block_height: state.monero.wallet.get_height().await.unwrap().get(),
         #[cfg(feature = "monero")]
         monero_network: match state.monero.wallet_address.network {
             monero_rpc::monero::Network::Mainnet => "Main",
@@ -44,11 +46,16 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
         }
         .to_string(),
         #[cfg(feature = "monero")]
-        monero_block_height: state.monero.wallet.get_height().await.unwrap().get(),
+        monero_wallet_address: state.monero.wallet_address.to_string(),
+        repository_url: state.repo_url,
         transactions: vec![Transaction {
             amount: "123".into(),
             timestamp: 123,
         }],
+        usd_balance: format!(
+            "{}",
+            crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance
+        ),
         ..Default::default()
     }
 }

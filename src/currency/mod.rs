@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+
+use anyhow::Result;
+use cached::proc_macro::once;
+
 #[cfg(feature = "monero")]
 pub mod monero;
 
@@ -18,4 +23,17 @@ impl Address {
             _ => None,
         }
     }
+}
+
+/// Lookup the current USD value of the given currency.
+#[once(time = "360", result = true)]
+pub async fn lookup(symbol: &str) -> Result<f64> {
+    let mapping: HashMap<String, f64> = reqwest::get(format!(
+        "https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms={symbol}"
+    ))
+    .await?
+    .json()
+    .await?;
+
+    Ok(*mapping.get(symbol).unwrap())
 }
