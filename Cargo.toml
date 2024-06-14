@@ -8,29 +8,31 @@ name = "turbine"
 path = "src/main.rs"
 
 [dependencies]
-axum = "0.7.5"
-config = "0.13.3"
-git2 = "0.18.1"
 anyhow = "1.0.86"
+askama_axum = "0.4.0"
+askama = { version = "0.12.1", features = ["with-axum"] }
+axum = "0.7.5"
+axum-macros = "0.4.1"
+base64 = "0.22.1"
+cached = { version = "0.51.3", features = ["async"] }
+chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["string", "derive"] }
+config = "0.13.3"
+float-pretty-print = "0.1.1"
+git2 = "0.18.1"
+# gpgme = "0.11.0"
+hex = "0.4.3"
+mime_guess = "2.0.4"
 monero = "0.21.0"
 monero-rpc = { git = "https://github.com/cilki/monero-rpc-rs", branch = "add_restore_deterministic_wallet", features = ["rpc_authentication"], optional = true }
 reqwest = { version = "0.12.4", features = ["json"] }
+rust-embed = { version = "8.4.0", features = ["axum", "debug-embed"] }
 serde = { version = "1.0.203", features = ["derive"] }
+tempfile = "3.10.1"
+tokio_schedule = "0.3.1"
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-askama = { version = "0.12.1", features = ["with-axum"] }
-askama_axum = "0.4.0"
-cached = { version = "0.51.3", features = ["async"] }
-tempfile = "3.10.1"
-rust-embed = { version = "8.4.0", features = ["axum", "debug-embed"] }
-mime_guess = "2.0.4"
-chrono = "0.4.38"
-tokio_schedule = "0.3.1"
-base64 = "0.22.1"
-hex = "0.4.3"
-# gpgme = "0.11.0"
 
 [features]
 monero = ["dep:monero-rpc"]

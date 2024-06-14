@@ -259,6 +259,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-macros"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00c055ee2d014ae5981ce1016374e8213682aa14d9bf40e48ab48b5f3ef20eaa"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -681,6 +693,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "float-pretty-print"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cae1cdc50a756244008a19d313827537e5e18d55f76779e8d5f9aa00769ca231"
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -834,11 +852,13 @@ dependencies = [
  "askama",
  "askama_axum",
  "axum",
+ "axum-macros",
  "base64 0.22.1",
  "cached",
  "chrono",
  "clap",
  "config",
+ "float-pretty-print",
  "git2",
  "hex",
  "mime_guess",

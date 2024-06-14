@@ -1,5 +1,11 @@
-use crate::{cli::ServeArgs, CommandLine};
+use crate::{
+    cli::ServeArgs,
+    repo::{Transaction, TurbineRepo},
+    CommandLine,
+};
 use anyhow::Result;
+use git2::Oid;
+use monero::util::address::PaymentId;
 use monero_rpc::{
     monero::{Address, Amount},
     AddressData, BlockHeightFilter, GetTransfersCategory, GetTransfersSelector, GotTransfer,
@@ -155,7 +161,7 @@ impl MoneroState {
     }
 
     /// Transfer the given amount of Monero.
-    pub async fn transfer(&self, address: &str, amount: Amount) -> Result<()> {
+    pub async fn transfer(&self, address: &str, amount: Amount, commit_id: &Oid) -> Result<()> {
         info!(amount = ?amount, dest = ?address, "Transferring Monero");
         self.wallet
             .transfer(
@@ -165,7 +171,7 @@ impl MoneroState {
                     account_index: Some(self.account_index),
                     subaddr_indices: None,
                     mixin: None,
-                    ring_size: None,
+                    ring_size: Some(16),
                     unlock_time: None,
                     payment_id: None,
                     do_not_relay: None,

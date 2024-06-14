@@ -26,23 +26,34 @@ impl Contributor {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Transaction {
+    pub amount: String,
+    pub timestamp: u64,
+    pub contributor_name: String,
+}
+
 ///
 pub struct TurbineRepo {
-    /// The branch to track
-    branch: String,
-
-    tmp: TempDir,
+    /// Branch to track
+    pub branch: String,
 
     /// Underlying git repository
     container: Repository,
 
+    pub contributors: Vec<Contributor>,
+
     /// ID of the last commit we parsed
-    last: Option<Oid>,
+    pub last: Option<Oid>,
 
     /// Last time we refreshed
-    last_refresh: Option<DateTime<Utc>>,
+    pub last_refresh: Option<DateTime<Utc>>,
 
-    pub contributors: Vec<Contributor>,
+    /// Remote URI
+    pub remote: String,
+
+    /// Cloned repo directory
+    tmp: TempDir,
 }
 
 impl std::fmt::Debug for TurbineRepo {
@@ -85,15 +96,40 @@ impl TurbineRepo {
         let container = Repository::clone(&remote, tmp.path())?;
         let mut repo = Self {
             branch: branch.into(),
-            tmp,
             container,
-            last: None,
             contributors: vec![],
+            last: None,
             last_refresh: None,
+            remote: remote.to_string(),
+            tmp,
         };
 
         repo.refresh()?;
         Ok(repo)
+    }
+
+    /// Find the contributor that created the given commit.
+    pub fn find_contributor<'a>(&'a self, commit_id: String) -> Result<&'a Contributor> {
+        let commit = self.container.find_commit(Oid::from_str(&commit_id)?)?;
+        let key_id = get_public_key_id(&commit)?;
+
+        Ok(self
+            .contributors
+            .iter()
+            .find(|contributor| contributor.key_id == key_id)
+            .unwrap())
+    }
+
+    pub fn monero_transfer(&self, transfer: &monero_rpc::GotTransfer) -> Result<Transaction> {
+        if let Ok(contributor) = self.find_contributor(transfer.payment_id.to_string()) {
+            Ok(Transaction {
+                amount: format!("{}", transfer.amount.as_xmr()),
+                timestamp: transfer.timestamp.timestamp() as u64,
+                contributor_name: "test".into(),
+            })
+        } else {
+            bail!("");
+        }
     }
 
     /// Verify a commit's GPG signature and return its key ID.
@@ -133,16 +169,17 @@ impl TurbineRepo {
         let mut revwalk = self.container.revwalk()?;
         revwalk.set_sorting(Sort::REVERSE)?;
 
-        if let Some(last) = self.last {
-            revwalk.push(last)?;
+        let start = if let Some(last) = self.last {
+            last
         } else {
             let branch = self
                 .container
                 .find_branch(&self.branch, git2::BranchType::Local)?;
             let branch_ref = branch.into_reference();
 
-            revwalk.push(branch_ref.target().unwrap())?;
-        }
+            branch_ref.target().unwrap()
+        };
+        revwalk.push(start)?;
 
         // Search for new contributors and update existing contributors
         debug!("Refreshing contributor table");
@@ -193,8 +230,10 @@ impl TurbineRepo {
         }
 
         revwalk.reset()?;
+        revwalk.push(start)?;
 
         // Find paid commits
+        debug!("Searching for new paid commits");
         loop {
             match revwalk.next() {
                 Some(next) => {
@@ -215,6 +254,11 @@ impl TurbineRepo {
                         {
                             info!(contributor = ?contributor, commit = ?commit, "Found new paid commit");
                             contributor.commits.push(commit.id());
+                        } else {
+                            debug!(
+                                key_id = key_id,
+                                "Found signed commit, but no contributor is registered"
+                            );
                         }
                     }
 
@@ -227,6 +271,7 @@ impl TurbineRepo {
         }
 
         self.last_refresh = Some(Utc::now());
+        debug!(repo = ?self, "Refreshed repository");
         Ok(())
     }
 }

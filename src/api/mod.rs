@@ -1,20 +1,17 @@
 use crate::cli::AppState;
+use crate::repo::Transaction;
 use askama_axum::Template;
 use axum::extract::State;
 use axum::{
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
 };
+use axum_macros::debug_handler;
 use cached::proc_macro::once;
 use chrono::{DateTime, Utc};
+use float_pretty_print::PrettyPrintFloat;
 use rust_embed::Embed;
-use tracing::instrument;
-
-#[derive(Debug, Clone)]
-pub struct Transaction {
-    pub amount: String,
-    pub timestamp: u64,
-}
+use tracing::{debug, instrument};
 
 #[derive(Template, Debug, Clone, Default)]
 #[template(path = "index.html")]
@@ -25,17 +22,20 @@ pub struct IndexTemplate {
     monero_network: String,
     monero_wallet_address: String,
     repository_url: String,
-    transactions: Vec<Transaction>,
+    monero_transactions: Vec<Transaction>,
     usd_balance: String,
 }
 
 #[once(time = "60")]
+#[debug_handler]
 pub async fn index(State(state): State<AppState>) -> IndexTemplate {
     let monero_balance = state.monero.get_balance().await.unwrap() as f64 / f64::powf(10.0, 12.0);
+    let repo = state.repo.lock().await;
+
     IndexTemplate {
         monero_enabled: cfg!(feature = "monero"),
         #[cfg(feature = "monero")]
-        monero_balance: format!("{:.2e}", monero_balance),
+        monero_balance: format!("{}", PrettyPrintFloat(monero_balance)),
         #[cfg(feature = "monero")]
         monero_block_height: state.monero.wallet.get_height().await.unwrap().get(),
         #[cfg(feature = "monero")]
@@ -47,14 +47,18 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
         .to_string(),
         #[cfg(feature = "monero")]
         monero_wallet_address: state.monero.wallet_address.to_string(),
-        repository_url: state.repo_url,
-        transactions: vec![Transaction {
-            amount: "123".into(),
-            timestamp: 123,
-        }],
+        repository_url: repo.remote.clone(),
+        monero_transactions: state
+            .monero
+            .get_transfers()
+            .await
+            .unwrap()
+            .iter()
+            .filter_map(|transfer| repo.monero_transfer(transfer).ok())
+            .collect(),
         usd_balance: format!(
             "{}",
-            crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance
+            PrettyPrintFloat(crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance)
         ),
         ..Default::default()
     }
@@ -98,7 +102,6 @@ where
 
 /// Refresh the turbine repo
 #[once(time = "60")]
-#[instrument(ret)]
 pub async fn refresh(State(state): State<AppState>) {
     let mut repo = state.repo.lock().await;
     repo.refresh().unwrap();
@@ -109,6 +112,8 @@ pub async fn refresh(State(state): State<AppState>) {
             #[cfg(feature = "monero")]
             crate::currency::Address::XMR(address) => {
                 let transfer_count = state.monero.count_transfers(&address).await.unwrap();
+                debug!(count = transfer_count, address = ?address, "Transfers to XMR address");
+
                 for commit_id in contributor.commits.iter().skip(transfer_count) {
                     state
                         .monero
@@ -117,6 +122,7 @@ pub async fn refresh(State(state): State<AppState>) {
                             monero::Amount::from_pico(
                                 contributor.compute_payout(commit_id.clone()),
                             ),
+                            commit_id,
                         )
                         .await
                         .unwrap();

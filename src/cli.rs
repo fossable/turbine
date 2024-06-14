@@ -72,7 +72,6 @@ pub struct ServeArgs {
 #[derive(Clone, Debug)]
 pub struct AppState {
     pub repo: Arc<Mutex<TurbineRepo>>,
-    pub repo_url: String,
 
     #[cfg(feature = "monero")]
     pub monero: crate::currency::monero::MoneroState,
@@ -81,7 +80,6 @@ pub struct AppState {
 pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
     let state = AppState {
         repo: Arc::new(Mutex::new(TurbineRepo::new(&args.repo, &args.branch)?)),
-        repo_url: args.repo.clone(),
 
         #[cfg(feature = "monero")]
         monero: crate::currency::monero::MoneroState::new(&args).await?,

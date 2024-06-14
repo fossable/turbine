@@ -8,15 +8,16 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      color: #e8e6e3;
       margin: 0;
       padding: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background-color: #333333;
+      background-color: rgb(38, 42, 43);
       background-size: 80px 80px;
-      background-image: linear-gradient(to right, #4a4a4a 1px, transparent 1px), linear-gradient(to bottom, #4a4a4a 1px, transparent 1px);
+      background-image: linear-gradient(to right, rgb(56, 60, 63) 1px, transparent 1px), linear-gradient(to bottom, rgb(56, 60, 63) 1px, transparent 1px);
     }
 
     .github-link {
@@ -47,8 +48,9 @@
 
     .header-block {
       text-align: center;
-      background-color: #fff;
+      background-color: rgb(24, 26, 27);
       padding: 20px;
+      margin-bottom: 10px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
@@ -110,10 +112,14 @@
       font-size: 16px;
       font-weight: bold;
       color: #2ecc71;
+      display: inline;
+      margin-left: 5px;
     }
 
     .balance-zero {
       color: #7f8c8d;
+      display: inline;
+      margin-left: 5px;
     }
 
     #wallet-address {
@@ -121,10 +127,10 @@
     }
 
     .summary-block {
-      border: 1px solid #ccc;
+      border: 1px solid rgb(62, 68, 70);
       padding: 10px;
       text-align: left;
-      background-color: #fff;
+      background-color: rgb(24, 26, 27);
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -133,19 +139,41 @@
     .transaction-block {
       height: 200px;
       overflow-y: auto;
-      border: 1px solid #ccc;
+      border: 1px solid rgb(62, 68, 70);
       padding: 10px;
       text-align: left;
-      background-color: #fff;
+      background-color: rgb(24, 26, 27);
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      margin-left: 20px;
+      margin-left: 10px;
     }
 
     .list-item {
       padding: 5px 0;
       border-bottom: 1px solid #eee;
+    }
+
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      border-bottom: 1px dotted black;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: black;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px 0;
+      position: absolute;
+      z-index: 1;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
     }
   </style>
 </head>
@@ -159,21 +187,19 @@
       <div class="logo-svg">
         <img src="/assets/turbine.svg">
       </div>
-      <p>Repository: {{ repo_url }}</p>
+      <a href="{{ repository_url }}">{{ repository_url }}</a>
     </div>
     {% if monero_enabled %}
     <div style="display: flex; direction: row;">
       <div class="summary-block">
-        <p>Balance:</p>
-        {% if monero_balance != "0" %}
-        <p class="balance-positive">{{ monero_balance }} (${{ usd_balance }})</p>
-        {% else %}
-        <p class="balance-zero">{{ monero_balance }}</p>
-        {% endif %}
         <img class="svg-monero" src="/assets/monero.svg">
+        {% if monero_balance != "0.0" %}
+        <p class="balance-positive">{{ monero_balance }} XMR ~ (${{ usd_balance }})</p>
+        {% else %}
+        <p class="balance-zero">{{ monero_balance }} XMR</p>
+        {% endif %}
         <p>Network: {{ monero_network }} ({{ monero_block_height }})</p>
         <div class="address">
-          <p style="display: inline;">Address:</p>
           <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
           <button class="copy-button" onclick="copyAddress()">
             <img class="svg-copy" src="/assets/copy.svg">
@@ -182,8 +208,8 @@
       </div>
       <div class="transaction-block">
         <ul>
-          {% for transaction in transactions %}
-          <li class="list-item">{{ transaction.amount }}</li>
+          {% for transaction in monero_transactions %}
+          <li class="list-item">{{ transaction.amount }} XMR</li>
           {% endfor %}
         </ul>
       </div>

@@ -26,7 +26,7 @@ impl Address {
 }
 
 /// Lookup the current USD value of the given currency.
-#[once(time = "360", result = true)]
+#[once(time = "3600", result = true)]
 pub async fn lookup(symbol: &str) -> Result<f64> {
     let mapping: HashMap<String, f64> = reqwest::get(format!(
         "https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms={symbol}"
