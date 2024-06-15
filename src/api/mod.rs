@@ -8,10 +8,9 @@ use axum::{
 };
 use axum_macros::debug_handler;
 use cached::proc_macro::once;
-use chrono::{DateTime, Utc};
 use float_pretty_print::PrettyPrintFloat;
 use rust_embed::Embed;
-use tracing::{debug, instrument};
+use tracing::debug;
 
 #[derive(Template, Debug, Clone, Default)]
 #[template(path = "index.html")]
@@ -23,13 +22,14 @@ pub struct IndexTemplate {
     monero_wallet_address: String,
     repository_url: String,
     monero_transactions: Vec<Transaction>,
-    usd_balance: String,
+    monero_balance_usd: String,
 }
 
 #[once(time = "60")]
 #[debug_handler]
 pub async fn index(State(state): State<AppState>) -> IndexTemplate {
-    let monero_balance = state.monero.get_balance().await.unwrap() as f64 / f64::powf(10.0, 12.0);
+    #[cfg(feature = "monero")]
+    let monero_balance = state.monero.get_balance().await.unwrap().as_xmr();
     let repo = state.repo.lock().await;
 
     IndexTemplate {
@@ -48,6 +48,7 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
         #[cfg(feature = "monero")]
         monero_wallet_address: state.monero.wallet_address.to_string(),
         repository_url: repo.remote.clone(),
+        #[cfg(feature = "monero")]
         monero_transactions: state
             .monero
             .get_transfers()
@@ -56,7 +57,8 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
             .iter()
             .filter_map(|transfer| repo.monero_transfer(transfer).ok())
             .collect(),
-        usd_balance: format!(
+        #[cfg(feature = "monero")]
+        monero_balance_usd: format!(
             "{}",
             PrettyPrintFloat(crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance)
         ),

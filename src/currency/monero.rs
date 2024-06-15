@@ -1,43 +1,47 @@
-use crate::{
-    cli::ServeArgs,
-    repo::{Transaction, TurbineRepo},
-    CommandLine,
-};
+use crate::cli::{AppState, ServeArgs};
 use anyhow::Result;
+use axum::extract::State;
+use axum::response::IntoResponse;
+
+use float_pretty_print::PrettyPrintFloat;
 use git2::Oid;
-use monero::util::address::PaymentId;
 use monero_rpc::{
     monero::{Address, Amount},
-    AddressData, BlockHeightFilter, GetTransfersCategory, GetTransfersSelector, GotTransfer,
+    BlockHeightFilter, GetTransfersCategory, GetTransfersSelector, GotTransfer,
     RestoreDeterministicWalletArgs, RpcClientBuilder, TransferOptions, TransferPriority,
     WalletClient,
 };
-use std::str::FromStr;
+use reqwest::header;
 use std::{
     collections::HashMap,
     process::{Child, Command},
     sync::Arc,
     time::Duration,
 };
-use tracing::{debug, info, instrument};
+use std::{str::FromStr, sync::Mutex};
+use tracing::{debug, info};
 
 #[derive(Clone, Debug)]
 pub struct MoneroState {
     pub wallet: WalletClient,
-    wallet_process: Option<Arc<Child>>,
+    wallet_process: Option<Arc<Mutex<Child>>>,
     pub wallet_address: Address,
     account_index: u32,
     minimum_block_height: u64,
 }
 
-// impl Drop for MoneroState {
-//     fn drop(&mut self) {
-//         if let Some(process) = self.wallet_process.as_mut() {
-//             debug!("Stopping RPC wallet daemon");
-//             process.kill().unwrap_or_default();
-//         }
-//     }
-// }
+impl Drop for MoneroState {
+    fn drop(&mut self) {
+        if let Some(process) = self.wallet_process.as_mut() {
+            if let Some(process) = Arc::get_mut(process) {
+                let mut process = process.lock().unwrap();
+
+                debug!("Stopping RPC wallet daemon");
+                process.kill().unwrap_or_default();
+            }
+        }
+    }
+}
 
 impl MoneroState {
     pub async fn new(args: &ServeArgs) -> anyhow::Result<Self> {
@@ -102,7 +106,7 @@ impl MoneroState {
         );
 
         Ok(Self {
-            wallet_process: Some(Arc::new(wallet_process)),
+            wallet_process: Some(Arc::new(Mutex::new(wallet_process))),
             wallet_address: wallet.get_address(0, None).await?.address,
             wallet,
             account_index: 0,
@@ -110,10 +114,12 @@ impl MoneroState {
         })
     }
 
-    pub async fn get_balance(&self) -> Result<u64> {
+    /// Query the current wallet balance.
+    // #[once(time = "60")]
+    pub async fn get_balance(&self) -> Result<Amount> {
         let balance = self.wallet.get_balance(self.account_index, None).await?;
         debug!(balance = ?balance, "Current Monero wallet balance");
-        Ok(balance.unlocked_balance.as_pico())
+        Ok(balance.unlocked_balance)
     }
 
     /// Count outbound transfers to the given address.
@@ -161,7 +167,7 @@ impl MoneroState {
     }
 
     /// Transfer the given amount of Monero.
-    pub async fn transfer(&self, address: &str, amount: Amount, commit_id: &Oid) -> Result<()> {
+    pub async fn transfer(&self, address: &str, amount: Amount, _commit_id: &Oid) -> Result<()> {
         info!(amount = ?amount, dest = ?address, "Transferring Monero");
         self.wallet
             .transfer(
@@ -180,4 +186,17 @@ impl MoneroState {
             .await?;
         Ok(())
     }
+}
+
+/// Return an SVG badge with the current monero balance.
+pub async fn balance(State(state): State<AppState>) -> impl IntoResponse {
+    let monero_balance = state.monero.get_balance().await.unwrap().as_xmr();
+
+    (
+        [(header::CONTENT_TYPE, "image/svg+xml")],
+        crate::badge::generate(
+            "balance",
+            &format!("{} XMR", PrettyPrintFloat(monero_balance)),
+        ),
+    )
 }

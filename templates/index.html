@@ -194,7 +194,7 @@
       <div class="summary-block">
         <img class="svg-monero" src="/assets/monero.svg">
         {% if monero_balance != "0.0" %}
-        <p class="balance-positive">{{ monero_balance }} XMR ~ (${{ usd_balance }})</p>
+        <p class="balance-positive">{{ monero_balance }} XMR ~ (${{ monero_balance_usd }})</p>
         {% else %}
         <p class="balance-zero">{{ monero_balance }} XMR</p>
         {% endif %}

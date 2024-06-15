@@ -1,10 +1,11 @@
 use crate::cli::Commands;
 use anyhow::Result;
-use axum::{response::Html, routing::get, Router};
+
 use clap::Parser;
 use std::process::ExitCode;
 
 mod api;
+mod badge;
 mod cli;
 mod config;
 mod currency;

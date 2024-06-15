@@ -1,14 +1,13 @@
 use crate::repo::TurbineRepo;
 use anyhow::Result;
 use axum::{
-    extract::FromRef,
     routing::{get, post},
     Router,
 };
 use chrono::Utc;
-use clap::{Args, Parser};
-use std::{env, process::ExitCode, sync::Arc};
-use tokio::spawn;
+use clap::Args;
+use std::{process::ExitCode, sync::Arc};
+
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_schedule::{every, Job};
 use tracing::info;
@@ -90,6 +89,9 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
         .route("/refresh", post(crate::api::refresh))
         .route("/assets/*file", get(crate::api::assets));
 
+    #[cfg(feature = "monero")]
+    let app = app.route("/xmr/balance", get(crate::currency::monero::balance));
+
     // Refresh every hour
     let every_hour = every(1)
         .hour()
@@ -104,9 +106,10 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
         });
     tokio::spawn(every_hour);
 
-    info!("Starting listener");
-    let listener =
-        TcpListener::bind(args.bind.as_ref().unwrap_or(&"0.0.0.0:3000".to_string())).await?;
+    let address = args.bind.clone().unwrap_or("0.0.0.0:3000".to_string());
+
+    info!(address =?address,"Starting API");
+    let listener = TcpListener::bind(address).await?;
     axum::serve(listener, app.with_state(state)).await?;
     Ok(ExitCode::SUCCESS)
 }

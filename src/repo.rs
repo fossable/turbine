@@ -2,10 +2,10 @@ use crate::currency::Address;
 use anyhow::{bail, Result};
 use base64::prelude::*;
 use chrono::{DateTime, Utc};
-use git2::{Commit, Oid, Repository, Revwalk, Sort};
-use std::process::{Command, Stdio};
+use git2::{Commit, Oid, Repository, Sort};
+use std::process::{Command};
 use tempfile::TempDir;
-use tracing::{debug, info, instrument, trace};
+use tracing::{debug, info, instrument};
 
 #[derive(Debug)]
 pub struct Contributor {
@@ -120,8 +120,9 @@ impl TurbineRepo {
             .unwrap())
     }
 
+    #[cfg(feature = "monero")]
     pub fn monero_transfer(&self, transfer: &monero_rpc::GotTransfer) -> Result<Transaction> {
-        if let Ok(contributor) = self.find_contributor(transfer.payment_id.to_string()) {
+        if let Ok(_contributor) = self.find_contributor(transfer.payment_id.to_string()) {
             Ok(Transaction {
                 amount: format!("{}", transfer.amount.as_xmr()),
                 timestamp: transfer.timestamp.timestamp() as u64,
