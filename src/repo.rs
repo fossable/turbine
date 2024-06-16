@@ -3,19 +3,22 @@ use anyhow::{bail, Result};
 use base64::prelude::*;
 use chrono::{DateTime, Utc};
 use git2::{Commit, Oid, Repository, Sort};
-use std::process::{Command};
+use std::process::Command;
 use tempfile::TempDir;
 use tracing::{debug, info, instrument};
 
 #[derive(Debug)]
 pub struct Contributor {
     pub address: Address,
-    pub last_payout: Option<DateTime<Utc>>,
+    /// Paid commits
+    pub commits: Vec<Oid>,
     /// The user's GPG public key ID which must remain constant
     pub key_id: String,
 
-    /// Paid commits
-    pub commits: Vec<Oid>,
+    pub last_payout: Option<DateTime<Utc>>,
+
+    /// The contributor's public name from git history
+    pub name: String,
 }
 
 impl Contributor {
@@ -108,33 +111,29 @@ impl TurbineRepo {
         Ok(repo)
     }
 
-    /// Find the contributor that created the given commit.
-    pub fn find_contributor<'a>(&'a self, commit_id: String) -> Result<&'a Contributor> {
-        let commit = self.container.find_commit(Oid::from_str(&commit_id)?)?;
-        let key_id = get_public_key_id(&commit)?;
-
-        Ok(self
+    #[cfg(feature = "monero")]
+    #[instrument(skip(self), ret)]
+    pub fn find_monero_transaction(
+        &self,
+        transfer: &monero_rpc::GotTransfer,
+    ) -> Result<Transaction> {
+        if let Some(contributor) = self
             .contributors
             .iter()
-            .find(|contributor| contributor.key_id == key_id)
-            .unwrap())
-    }
-
-    #[cfg(feature = "monero")]
-    pub fn monero_transfer(&self, transfer: &monero_rpc::GotTransfer) -> Result<Transaction> {
-        if let Ok(_contributor) = self.find_contributor(transfer.payment_id.to_string()) {
+            .find(|contributor| contributor.address == Address::XMR(transfer.address.to_string()))
+        {
             Ok(Transaction {
                 amount: format!("{}", transfer.amount.as_xmr()),
                 timestamp: transfer.timestamp.timestamp() as u64,
-                contributor_name: "test".into(),
+                contributor_name: contributor.name.clone(),
             })
         } else {
-            bail!("");
+            bail!("Transaction not found");
         }
     }
 
     /// Verify a commit's GPG signature and return its key ID.
-    #[instrument(ret, level = "trace")]
+    #[instrument(skip(self), ret, level = "trace")]
     fn verify_signature(&self, commit: &Commit) -> Result<String> {
         // Receive the public key first
         Command::new("gpg")
@@ -217,6 +216,7 @@ impl TurbineRepo {
                                     last_payout: None,
                                     key_id,
                                     commits: Vec::new(),
+                                    name: commit.author().name().unwrap_or("<invalid>").to_string(),
                                 };
 
                                 info!(contributor = ?contributor, "Adding new contributor");

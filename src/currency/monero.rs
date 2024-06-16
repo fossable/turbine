@@ -19,7 +19,7 @@ use std::{
     time::Duration,
 };
 use std::{str::FromStr, sync::Mutex};
-use tracing::{debug, info};
+use tracing::{debug, info, instrument};
 
 #[derive(Clone, Debug)]
 pub struct MoneroState {
@@ -119,7 +119,7 @@ impl MoneroState {
     pub async fn get_balance(&self) -> Result<Amount> {
         let balance = self.wallet.get_balance(self.account_index, None).await?;
         debug!(balance = ?balance, "Current Monero wallet balance");
-        Ok(balance.unlocked_balance)
+        Ok(balance.balance)
     }
 
     /// Count outbound transfers to the given address.
@@ -146,6 +146,7 @@ impl MoneroState {
     }
 
     /// Get all outbound transfers.
+    #[instrument(skip_all, ret)]
     pub async fn get_transfers(&self) -> Result<Vec<GotTransfer>> {
         let transfers = self
             .wallet
@@ -197,6 +198,17 @@ pub async fn balance(State(state): State<AppState>) -> impl IntoResponse {
         crate::badge::generate(
             "balance",
             &format!("{} XMR", PrettyPrintFloat(monero_balance)),
+        ),
+    )
+}
+
+/// Return an SVG badge with the total number of payouts.
+pub async fn payouts(State(state): State<AppState>) -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "image/svg+xml")],
+        crate::badge::generate(
+            "payouts",
+            &format!("{}", state.monero.get_transfers().await.unwrap().len()),
         ),
     )
 }

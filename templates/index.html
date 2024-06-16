@@ -103,7 +103,7 @@
       max-height: 20px;
     }
 
-    .address {
+    .wallet-address-container {
       white-space: nowrap;
     }
 
@@ -123,7 +123,7 @@
     }
 
     #wallet-address {
-      width: 80px;
+      width: 100%;
     }
 
     .summary-block {
@@ -140,10 +140,11 @@
       height: 200px;
       overflow-y: auto;
       border: 1px solid rgb(62, 68, 70);
-      padding: 10px;
+      padding-top: 10px;
+      padding-left: 20px;
+      padding-right: 20px;
       text-align: left;
       background-color: rgb(24, 26, 27);
-      padding: 20px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       margin-left: 10px;
@@ -175,6 +176,18 @@
     .tooltip:hover .tooltiptext {
       visibility: visible;
     }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-weight: bold;
+    }
+
+    a:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
   </style>
 </head>
 
@@ -199,7 +212,7 @@
         <p class="balance-zero">{{ monero_balance }} XMR</p>
         {% endif %}
         <p>Network: {{ monero_network }} ({{ monero_block_height }})</p>
-        <div class="address">
+        <div class="wallet-address-container">
           <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
           <button class="copy-button" onclick="copyAddress()">
             <img class="svg-copy" src="/assets/copy.svg">
@@ -207,6 +220,7 @@
         </div>
       </div>
       <div class="transaction-block">
+        <p>Transaction log</p>
         <ul>
           {% for transaction in monero_transactions %}
           <li class="list-item">{{ transaction.amount }} XMR</li>

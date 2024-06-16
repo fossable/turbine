@@ -6,7 +6,7 @@ use cached::proc_macro::once;
 #[cfg(feature = "monero")]
 pub mod monero;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Address {
     BTC(String),
     #[cfg(feature = "monero")]

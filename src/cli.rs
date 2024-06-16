@@ -92,6 +92,9 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
     #[cfg(feature = "monero")]
     let app = app.route("/xmr/balance", get(crate::currency::monero::balance));
 
+    #[cfg(feature = "monero")]
+    let app = app.route("/xmr/payouts", get(crate::currency::monero::payouts));
+
     // Refresh every hour
     let every_hour = every(1)
         .hour()

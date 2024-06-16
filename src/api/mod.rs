@@ -35,7 +35,7 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
     IndexTemplate {
         monero_enabled: cfg!(feature = "monero"),
         #[cfg(feature = "monero")]
-        monero_balance: format!("{}", PrettyPrintFloat(monero_balance)),
+        monero_balance: format!("{:.5}", PrettyPrintFloat(monero_balance)),
         #[cfg(feature = "monero")]
         monero_block_height: state.monero.wallet.get_height().await.unwrap().get(),
         #[cfg(feature = "monero")]
@@ -55,11 +55,11 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
             .await
             .unwrap()
             .iter()
-            .filter_map(|transfer| repo.monero_transfer(transfer).ok())
+            .filter_map(|transfer| repo.find_monero_transaction(transfer).ok())
             .collect(),
         #[cfg(feature = "monero")]
         monero_balance_usd: format!(
-            "{}",
+            "{:.2}",
             PrettyPrintFloat(crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance)
         ),
         ..Default::default()
