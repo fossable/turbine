@@ -24,7 +24,7 @@ git2 = "0.18.1"
 hex = "0.4.3"
 mime_guess = "2.0.4"
 monero = "0.21.0"
-monero-rpc = { git = "https://github.com/cilki/monero-rpc-rs", branch = "add_restore_deterministic_wallet", features = ["rpc_authentication"], optional = true }
+monero-rpc = { version = "0.4.0", features = ["rpc_authentication"], optional = true }
 reqwest = { version = "0.12.4", features = ["json"] }
 rust-embed = { version = "8.4.0", features = ["axum", "debug-embed"] }
 serde = { version = "1.0.203", features = ["derive"] }

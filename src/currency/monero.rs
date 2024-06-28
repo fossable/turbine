@@ -6,10 +6,9 @@ use axum::response::IntoResponse;
 use float_pretty_print::PrettyPrintFloat;
 use git2::Oid;
 use monero_rpc::{
-    monero::{Address, Amount},
-    BlockHeightFilter, GetTransfersCategory, GetTransfersSelector, GotTransfer,
-    RestoreDeterministicWalletArgs, RpcClientBuilder, TransferOptions, TransferPriority,
-    WalletClient,
+    monero::{Address, Amount, PrivateKey},
+    BlockHeightFilter, GenerateFromKeysArgs, GetTransfersCategory, GetTransfersSelector,
+    GotTransfer, RpcClientBuilder, TransferOptions, TransferPriority, WalletClient,
 };
 use reqwest::header;
 use std::{
@@ -82,21 +81,36 @@ impl MoneroState {
             .build(format!("http://127.0.0.1:{}", args.monero_rpc_port))?
             .wallet();
 
-        if args.monero_wallet_seed {
-            debug!("Restoring wallet from mnemonic seed phrase");
-            wallet
-                .restore_deterministic_wallet(RestoreDeterministicWalletArgs {
-                    autosave_current: None,
-                    filename: "turbine".into(),
-                    password: args.monero_wallet_password.clone(),
-                    restore_height: Some(args.monero_block_height),
-                    seed: std::env::var("MONERO_WALLET_SEED")?,
-                    seed_offset: None,
-                })
-                .await?;
-        } else if let Some(path) = args.monero_wallet_path.as_ref() {
+        if let Some(path) = args.monero_wallet_path.as_ref() {
             wallet
                 .open_wallet(path.to_owned(), Some(args.monero_wallet_password.clone()))
+                .await?;
+        } else if let Ok(_seed) = std::env::var("MONERO_WALLET_SEED") {
+            debug!("Restoring wallet from mnemonic seed phrase");
+            todo!();
+            // wallet
+            //     .restore_deterministic_wallet(RestoreDeterministicWalletArgs {
+            //         autosave_current: None,
+            //         filename: "turbine".into(),
+            //         password: args.monero_wallet_password.clone(),
+            //         restore_height: Some(args.monero_block_height),
+            //         seed,
+            //         seed_offset: None,
+            //     })
+            //     .await?;
+        } else {
+            wallet
+                .generate_from_keys(GenerateFromKeysArgs {
+                    restore_height: Some(args.monero_block_height),
+                    filename: "turbine".into(),
+                    address: Address::from_str(&std::env::var("MONERO_WALLET_ADDRESS")?)?,
+                    spendkey: Some(PrivateKey::from_str(&std::env::var(
+                        "MONERO_WALLET_SPENDKEY",
+                    )?)?),
+                    viewkey: PrivateKey::from_str(&std::env::var("MONERO_WALLET_VIEWKEY")?)?,
+                    password: args.monero_wallet_password.clone(),
+                    autosave_current: None,
+                })
                 .await?;
         }
 
@@ -208,7 +222,7 @@ pub async fn payouts(State(state): State<AppState>) -> impl IntoResponse {
         [(header::CONTENT_TYPE, "image/svg+xml")],
         crate::badge::generate(
             "payouts",
-            &format!("{}", state.monero.get_transfers().await.unwrap().len()),
+            &format!("{:.1}", state.monero.get_transfers().await.unwrap().len()),
         ),
     )
 }

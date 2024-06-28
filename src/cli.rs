@@ -49,19 +49,8 @@ pub struct ServeArgs {
     pub monero_wallet_password: String,
 
     #[cfg(feature = "monero")]
-    #[clap(long, conflicts_with = "monero_wallet_seed")]
+    #[clap(long)]
     pub monero_wallet_path: Option<String>,
-
-    /// Restore wallet from a mnemonic seed phrase given by the environment variable:
-    /// MONERO_WALLET_SEED.
-    #[cfg(feature = "monero")]
-    #[clap(
-        long,
-        num_args = 0,
-        conflicts_with = "monero_wallet_path",
-        default_value_t = false
-    )]
-    pub monero_wallet_seed: bool,
 
     #[cfg(feature = "monero")]
     #[clap(long, default_value = "stagenet.xmr-tw.org:38081")]
@@ -95,23 +84,23 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
     #[cfg(feature = "monero")]
     let app = app.route("/xmr/payouts", get(crate::currency::monero::payouts));
 
+    let address = args.bind.clone().unwrap_or("0.0.0.0:80".to_string());
+
     // Refresh every hour
     let every_hour = every(1)
         .hour()
         .at(10, 30)
         .in_timezone(&Utc)
-        .perform(|| async {
+        .perform(|| async move {
             reqwest::Client::new()
-                .post("http://127.0.0.1:3000/refresh")
+                .post(format!("http://127.0.0.1:{}/refresh", 80)) // TODO
                 .send()
                 .await
                 .unwrap();
         });
     tokio::spawn(every_hour);
 
-    let address = args.bind.clone().unwrap_or("0.0.0.0:3000".to_string());
-
-    info!(address =?address,"Starting API");
+    info!(address = ?address,"Starting API");
     let listener = TcpListener::bind(address).await?;
     axum::serve(listener, app.with_state(state)).await?;
     Ok(ExitCode::SUCCESS)

@@ -49,7 +49,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: goldboot-${{ matrix.target }}
+          name: turbine-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/turbine
 
       - name: Upload artifacts to release
@@ -58,8 +58,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           for tag in $(git tag --points-at HEAD); do
-            if cp target/${{ matrix.target }}/release/${tag%-*} ${tag%-*}_${{ matrix.target }}; then
-              gh release upload "${tag}" "${tag%-*}_${{ matrix.target }}"
+            if cp target/${{ matrix.target }}/release/turbine turbine_${{ matrix.target }}; then
+              gh release upload "${tag##*-}" "turbine_${{ matrix.target }}"
             fi
           done
 
@@ -94,14 +94,14 @@ jobs:
         id: get_tags
         run: |
           for tag in $(git tag --points-at HEAD); do
-            echo "${tag%-*}=${tag##*-}" >>"$GITHUB_OUTPUT"
+            echo "turbine=${tag##*-}" >>"$GITHUB_OUTPUT"
           done
 
       - uses: docker/build-push-action@v5
-        if: ${{ steps.get_tags.outputs.goldboot != '' }}
+        if: ${{ steps.get_tags.outputs.turbine != '' }}
         with:
           context: .
-          platforms: linux/amd64,linux/arm64 #,linux/arm/v7
+          platforms: linux/amd64 #,linux/arm64,linux/arm/v7
           push: true
           tags: fossable/turbine:latest,fossable/turbine:${{ steps.get_tags.outputs.turbine }}
 

@@ -121,7 +121,7 @@ pub async fn refresh(State(state): State<AppState>) {
                         .monero
                         .transfer(
                             &address,
-                            monero::Amount::from_pico(
+                            monero_rpc::monero::Amount::from_pico(
                                 contributor.compute_payout(commit_id.clone()),
                             ),
                             commit_id,
