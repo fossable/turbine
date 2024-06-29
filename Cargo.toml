@@ -1,7 +1,12 @@
 [package]
-name = "git-turbine"
-version = "0.0.1"
+authors = ["Tyler Cook"]
+description = "Cryptocurrency for commits!"
 edition = "2021"
+license = "AGPL-3.0-only"
+name = "git-turbine"
+repository = "https://github.com/fossable/turbine"
+rust-version = "1.74"
+version = "0.0.1"
 
 [[bin]]
 name = "turbine"
