@@ -40,12 +40,9 @@ just like we have to trust them not to include a backdoor in the software (for e
 
 ## Using `turbine` as a contributor
 
-First, you need to find a repository that's hosting a `turbine`. The full list
-is currently small enough to maintain here:
+First, you need to find a repository that's hosting a `turbine`. Here are some examples:
 
-- ...
-
-TODO
+- `https://github.com/fossable/goldboot`
 
 ### Generate a GPG keypair
 
@@ -91,5 +88,19 @@ Contribute as normal and `turbine` will pay you automatically.
 
 ## Running your own `turbine`
 
-### Create a new wallet
-TODO
+`turbine` is fully dockerized and requires no persistent state.
+
+### Monero
+
+```
+docker run \
+	-e MONERO_WALLET_ADDRESS=<address> \
+	-e MONERO_WALLET_SPENDKEY=<private key> \
+	-e MONERO_WALLET_VIEWKEY=<private key> \
+	fossable/turbine \
+		--stagenet \
+    --repo <repo clone URL> \
+    --branch master \
+    --monero-block-height <wallet initial block height> \
+    --monero-wallet-password 1234
+```
