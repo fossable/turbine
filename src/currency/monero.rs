@@ -226,3 +226,14 @@ pub async fn payouts(State(state): State<AppState>) -> impl IntoResponse {
         ),
     )
 }
+
+/// Return an SVG badge with the wallet address.
+pub async fn address(State(state): State<AppState>) -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "image/svg+xml")],
+        crate::badge::generate(
+            "XMR",
+            &format!("{}", state.monero.wallet_address.to_string()),
+        ),
+    )
+}

@@ -79,10 +79,10 @@ pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
         .route("/assets/*file", get(crate::api::assets));
 
     #[cfg(feature = "monero")]
-    let app = app.route("/xmr/balance", get(crate::currency::monero::balance));
-
-    #[cfg(feature = "monero")]
-    let app = app.route("/xmr/payouts", get(crate::currency::monero::payouts));
+    let app = app
+        .route("/xmr/balance", get(crate::currency::monero::balance))
+        .route("/xmr/payouts", get(crate::currency::monero::payouts))
+        .route("/xmr/address", get(crate::currency::monero::address));
 
     let address = args.bind.clone().unwrap_or("0.0.0.0:80".to_string());
 
