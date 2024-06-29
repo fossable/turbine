@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2](https://github.com/fossable/turbine/compare/v0.0.1...v0.0.2) - 2024-06-29
+
+### Other
+- update images
+- update readme
+- update release workflow
+
 ## [0.0.1](https://github.com/fossable/turbine/releases/tag/v0.0.1) - 2024-06-29
 
 ### Other
