@@ -43,6 +43,7 @@ jobs:
       - name: Find version tags
         id: get_tags
         run: |
+          set -x
           for tag in $(git tag --points-at HEAD); do
             echo "turbine=${tag##*-}" >>"$GITHUB_OUTPUT"
           done
@@ -51,7 +52,7 @@ jobs:
         if: ${{ steps.get_tags.outputs.turbine != '' }}
         with:
           context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64 #,linux/arm64,linux/arm/v7
           push: true
           tags: fossable/turbine:latest,fossable/turbine:${{ steps.get_tags.outputs.turbine }}
 
