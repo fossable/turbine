@@ -1,5 +1,8 @@
+use anyhow::Result;
+use cached::proc_macro::once;
+
 /// Generate a simple SVG badge with the given attributes.
-pub fn generate(title: &str, value: &str) -> String {
+pub fn _generate(title: &str, value: &str) -> String {
     format!(
         r###"
         <svg
@@ -31,4 +34,25 @@ pub fn generate(title: &str, value: &str) -> String {
         // title.len() * 10,
         // value.len() * 10,
     )
+}
+
+/// Load a badge from shields.io. TODO: replace this with a custom generator.
+#[once(result = true)]
+pub async fn generate(title: &str, value: &str) -> Result<String> {
+    Ok(reqwest::get(format!(
+        "https://img.shields.io/badge/{}-{}-green",
+        title, value
+    ))
+    .await?
+    .text()
+    .await?)
+}
+
+#[cfg(test)]
+mod test {
+    #[tokio::test]
+    async fn test_generate() {
+        let svg = super::generate("test", "value").await.unwrap();
+        println!("{}", svg);
+    }
 }
