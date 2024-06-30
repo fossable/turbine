@@ -138,7 +138,10 @@ impl TurbineRepo {
         // Receive the public key first
         Command::new("gpg")
             .arg("--keyserver")
-            .arg("hkp://keys.gnupg.net")
+            .arg(
+                std::env::var("TURBINE_GPG_KEYSERVER")
+                    .unwrap_or("hkp://keyserver.ubuntu.com".into()),
+            )
             .arg("--recv-keys")
             .arg(get_public_key_id(&commit)?)
             .spawn()?

@@ -52,7 +52,6 @@ pub async fn generate(title: &str, value: &str) -> Result<String> {
 mod test {
     #[tokio::test]
     async fn test_generate() {
-        let svg = super::generate("test", "value").await.unwrap();
-        println!("{}", svg);
+        super::generate("test", "value").await.unwrap();
     }
 }

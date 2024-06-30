@@ -48,7 +48,7 @@ unlike the bug bounty model.
 
 First, you need to find a repository that's hosting a `turbine`. Here are some examples:
 
-- https://github.com/fossable/goldboot
+- https://turbine.goldboot.org
 
 The `turbine` homepage has the crypto wallet address that allows you to add funds.
 
@@ -82,7 +82,7 @@ To allow `turbine` to find your public key and verify commits, upload it to this
 keyserver:
 
 ```sh
-gpg --keyserver hkp://keys.gnupg.net --send-keys <public key ID>
+gpg --keyserver hkp://keyserver.ubuntu.com --send-keys <public key ID>
 ```
 
 ### Commit your payment address
@@ -105,15 +105,17 @@ Contribute as normal and `turbine` will pay you automatically.
 
 ### Monero
 
+So far `turbine` only supports Monero, but other currencies can be supported later.
+
 ```sh
 docker run \
-	-e MONERO_WALLET_ADDRESS=<address> \
-	-e MONERO_WALLET_SPENDKEY=<private key> \
-	-e MONERO_WALLET_VIEWKEY=<private key> \
-	fossable/turbine \
-		--stagenet \
-    --repo <repo clone URL> \
-    --branch master \
-    --monero-block-height <wallet initial block height> \
-    --monero-wallet-password 1234
+    -e MONERO_WALLET_ADDRESS=<address> \
+    -e MONERO_WALLET_SPENDKEY=<private key> \
+    -e MONERO_WALLET_VIEWKEY=<private key> \
+    fossable/turbine \
+        --stagenet \
+        --repo <repo clone URL> \
+        --branch master \
+        --monero-block-height <wallet restore height> \
+        --monero-wallet-password 1234
 ```
