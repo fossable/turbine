@@ -6,7 +6,7 @@ license = "AGPL-3.0-only"
 name = "git-turbine"
 repository = "https://github.com/fossable/turbine"
 rust-version = "1.74"
-version = "0.0.2"
+version = "0.0.3"
 
 [[bin]]
 name = "turbine"
