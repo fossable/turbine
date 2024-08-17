@@ -220,10 +220,10 @@
         </div>
       </div>
       <div class="transaction-block">
-        <p>Transaction log</p>
+        <p>Paid commits</p>
         <ul>
-          {% for transaction in monero_transactions %}
-          <li class="list-item">{{ transaction.amount }} XMR</li>
+          {% for commit in commits %}
+          <li class="list-item">{{ commit.author }} XMR</li>
           {% endfor %}
         </ul>
       </div>

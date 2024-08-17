@@ -1,9 +1,10 @@
 use crate::currency::Address;
 use anyhow::{bail, Result};
 use base64::prelude::*;
+use cached::proc_macro::once;
 use chrono::{DateTime, Utc};
 use git2::{Commit, Oid, Repository, Sort};
-use std::process::Command;
+use std::{path::PathBuf, process::Command};
 use tempfile::TempDir;
 use tracing::{debug, info, instrument};
 
@@ -27,13 +28,6 @@ impl Contributor {
         // TODO
         1
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct Transaction {
-    pub amount: String,
-    pub timestamp: u64,
-    pub contributor_name: String,
 }
 
 ///
@@ -91,6 +85,41 @@ fn get_public_key_id(commit: &Commit) -> Result<String> {
     bail!("Failed to get GPG public key ID");
 }
 
+/// Receive the public key for the given commit.
+#[once(time = "36000", result = true)]
+fn import_public_key(commit: &Commit) -> Result<()> {
+    Command::new("gpg")
+        .arg("--keyserver")
+        .arg(std::env::var("TURBINE_GPG_KEYSERVER").unwrap_or("hkp://keyserver.ubuntu.com".into()))
+        .arg("--recv-keys")
+        .arg(get_public_key_id(&commit)?)
+        .spawn()?
+        .wait()?;
+
+    Ok(())
+}
+
+/// Verify a commit's GPG signature and return its key ID.
+#[once(result = true)]
+fn verify_signature(repo: PathBuf, commit: &Commit) -> Result<String> {
+    // Receive the public key first
+    import_public_key(commit)?;
+
+    // TODO verify the signature ourselves (gpgme?)
+    if Command::new("git")
+        .arg("verify-commit")
+        .arg(commit.id().to_string())
+        .current_dir(repo)
+        .spawn()?
+        .wait()?
+        .success()
+    {
+        Ok(get_public_key_id(&commit)?)
+    } else {
+        bail!("Failed to verify signature");
+    }
+}
+
 impl TurbineRepo {
     pub fn new(remote: &str, branch: &str) -> Result<Self> {
         let tmp = tempfile::tempdir()?;
@@ -132,34 +161,33 @@ impl TurbineRepo {
         }
     }
 
-    /// Verify a commit's GPG signature and return its key ID.
-    #[instrument(skip(self), ret, level = "trace")]
-    fn verify_signature(&self, commit: &Commit) -> Result<String> {
-        // Receive the public key first
-        Command::new("gpg")
-            .arg("--keyserver")
-            .arg(
-                std::env::var("TURBINE_GPG_KEYSERVER")
-                    .unwrap_or("hkp://keyserver.ubuntu.com".into()),
-            )
-            .arg("--recv-keys")
-            .arg(get_public_key_id(&commit)?)
-            .spawn()?
-            .wait()?;
+    /// Get all signed commits (whether their signatures are valid or not).
+    pub fn get_signed_commits(&self) -> Result<Vec<Oid>> {
+        let mut revwalk = self.container.revwalk()?;
+        let branch = self
+            .container
+            .find_branch(&self.branch, git2::BranchType::Local)?;
+        let branch_ref = branch.into_reference();
 
-        // TODO verify the signature ourselves (gpgme?)
-        if Command::new("git")
-            .arg("verify-commit")
-            .arg(commit.id().to_string())
-            .current_dir(self.tmp.path())
-            .spawn()?
-            .wait()?
-            .success()
-        {
-            Ok(get_public_key_id(&commit)?)
-        } else {
-            bail!("Failed to verify signature");
+        revwalk.push(branch_ref.target().unwrap())?;
+
+        let mut commits = Vec::new();
+        loop {
+            if let Some(next) = revwalk.next() {
+                let commit = self.container.find_commit(next?)?;
+
+                // Check for GPG signature
+                if let Some(header) = commit.raw_header() {
+                    if header.contains("gpgsig") {
+                        commits.push(commit.id());
+                    }
+                }
+            } else {
+                break;
+            }
         }
+
+        Ok(commits)
     }
 
     pub fn refresh(&mut self) -> Result<()> {
@@ -197,7 +225,7 @@ impl TurbineRepo {
                     }
                 }
 
-                if let Ok(key_id) = self.verify_signature(&commit) {
+                if let Ok(key_id) = verify_signature(self.tmp.path().to_path_buf(), &commit) {
                     if let Some(message) = commit.message() {
                         #[cfg(feature = "monero")]
                         if let Some((_, address)) = message.split_once("XMR") {
@@ -250,7 +278,7 @@ impl TurbineRepo {
                         }
                     }
 
-                    if let Ok(key_id) = self.verify_signature(&commit) {
+                    if let Ok(key_id) = verify_signature(self.tmp.path().to_path_buf(), &commit) {
                         if let Some(contributor) = self
                             .contributors
                             .iter_mut()

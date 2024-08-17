@@ -1,5 +1,4 @@
 use crate::cli::AppState;
-use crate::repo::Transaction;
 use askama_axum::Template;
 use axum::extract::State;
 use axum::{
@@ -12,6 +11,13 @@ use float_pretty_print::PrettyPrintFloat;
 use rust_embed::Embed;
 use tracing::debug;
 
+#[derive(Debug, Clone)]
+pub struct PaidCommit {
+    pub amount: String,
+    pub timestamp: u64,
+    pub contributor_name: String,
+}
+
 #[derive(Template, Debug, Clone, Default)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
@@ -21,7 +27,7 @@ pub struct IndexTemplate {
     monero_network: String,
     monero_wallet_address: String,
     repository_url: String,
-    monero_transactions: Vec<Transaction>,
+    commits: Vec<PaidCommit>,
     monero_balance_usd: String,
 }
 
