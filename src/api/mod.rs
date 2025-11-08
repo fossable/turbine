@@ -9,7 +9,8 @@ use axum_macros::debug_handler;
 use cached::proc_macro::once;
 use float_pretty_print::PrettyPrintFloat;
 use rust_embed::Embed;
-use tracing::debug;
+use std::time::Duration;
+use tracing::{debug, error, info};
 
 #[derive(Debug, Clone)]
 pub struct PaidCommit {
@@ -123,7 +124,7 @@ pub async fn refresh(State(state): State<AppState>) {
                 debug!(count = transfer_count, address = ?address, "Transfers to XMR address");
 
                 for commit_id in contributor.commits.iter().skip(transfer_count) {
-                    state
+                    match state
                         .monero
                         .transfer(
                             &address,
@@ -133,7 +134,10 @@ pub async fn refresh(State(state): State<AppState>) {
                             commit_id,
                         )
                         .await
-                        .unwrap();
+                    {
+                        Ok(_) => info!("Transfer complete"),
+                        Err(e) => error!(error=%e, "Transfer failed"),
+                    };
                 }
             }
         };

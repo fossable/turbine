@@ -12,7 +12,7 @@ set -e -x
 		Subkey-Length: 2048
 		Name-Real: Test Contributor
 		Name-Email: test@example.com
-		Expire-Date: 1d
+		Expire-Date: 30d
 		%no-protection
 		%commit
 	EOF

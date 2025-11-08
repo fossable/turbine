@@ -8,7 +8,7 @@ use git2::Oid;
 use monero_rpc::{
     monero::{Address, Amount, PrivateKey},
     BlockHeightFilter, GenerateFromKeysArgs, GetTransfersCategory, GetTransfersSelector,
-    GotTransfer, RpcClientBuilder, TransferOptions, TransferPriority, WalletClient,
+    GotTransfer, RestoreDeterministicWalletArgs, RpcClientBuilder, TransferOptions, TransferPriority, WalletClient,
 };
 use reqwest::header;
 use std::{
@@ -46,6 +46,11 @@ impl MoneroState {
     pub async fn new(args: &ServeArgs) -> anyhow::Result<Self> {
         // Spawn new wallet RPC process
         debug!("Spawning wallet RPC daemon");
+
+        let wallet_dir = args.monero_wallet_path.as_ref()
+            .and_then(|p| p.parent())
+            .unwrap_or_else(|| std::path::Path::new("/wallets"));
+
         let wallet_process = Command::new("monero-wallet-rpc")
             .arg("--rpc-bind-port")
             .arg(format!("{}", args.monero_rpc_port))
@@ -58,7 +63,7 @@ impl MoneroState {
                 "--non-interactive"
             })
             .arg("--wallet-dir")
-            .arg("/wallets")
+            .arg(wallet_dir)
             .arg("--daemon-address")
             .arg(&args.monero_daemon_address)
             .spawn()?;
@@ -82,10 +87,13 @@ impl MoneroState {
             .wallet();
 
         if let Some(path) = args.monero_wallet_path.as_ref() {
+            let wallet_name = path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or(path.to_str().unwrap_or("wallet"));
             wallet
-                .open_wallet(path.to_owned(), Some(args.monero_wallet_password.clone()))
+                .open_wallet(wallet_name.to_owned(), Some(args.monero_wallet_password.clone()))
                 .await?;
-        } else if let Ok(_seed) = std::env::var("MONERO_WALLET_SEED") {
+        } else if let Ok(seed) = std::env::var("MONERO_WALLET_SEED") {
             debug!("Restoring wallet from mnemonic seed phrase");
             wallet
                 .restore_deterministic_wallet(RestoreDeterministicWalletArgs {
@@ -195,6 +203,7 @@ impl MoneroState {
                     unlock_time: None,
                     payment_id: None,
                     do_not_relay: None,
+                    subtract_fee_from_outputs: None,
                 },
             )
             .await?;

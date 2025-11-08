@@ -6,7 +6,7 @@ use base64::prelude::*;
 use cached::proc_macro::once;
 use chrono::{DateTime, Utc};
 use git2::{Commit, Oid, Repository, Sort};
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command, time::Duration};
 use tempfile::TempDir;
 use tracing::{debug, info, instrument};
 

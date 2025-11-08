@@ -6,7 +6,7 @@ use axum::{
 };
 use chrono::Utc;
 use clap::Args;
-use std::{process::ExitCode, sync::Arc};
+use std::{path::PathBuf, process::ExitCode, sync::Arc};
 
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_schedule::{every, Job};
@@ -50,7 +50,7 @@ pub struct ServeArgs {
 
     #[cfg(feature = "monero")]
     #[clap(long)]
-    pub monero_wallet_path: Option<String>,
+    pub monero_wallet_path: Option<PathBuf>,
 
     #[cfg(feature = "monero")]
     #[clap(long, default_value = "stagenet.xmr-tw.org:38081")]
