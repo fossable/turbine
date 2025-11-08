@@ -55,7 +55,7 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
         monero_wallet_address: state.monero.wallet_address.to_string(),
         repository_url: repo.remote.clone(),
         #[cfg(feature = "monero")]
-        monero_transactions: state
+        commits: state
             .monero
             .get_transfers()
             .await

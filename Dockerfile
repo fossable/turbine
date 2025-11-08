@@ -1,4 +1,4 @@
-FROM rust as build
+FROM rust AS build
 
 WORKDIR /build
 COPY . .
@@ -14,7 +14,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install monero wallet RPC daemon
-RUN curl https://downloads.getmonero.org/cli/monero-linux-x64-v0.18.3.3.tar.bz2 | tar --transform='flags=r;s|.*/||' -xjf - -C /usr/bin monero-x86_64-linux-gnu-v0.18.3.3/monero-wallet-rpc
+RUN curl https://downloads.getmonero.org/cli/monero-linux-x64-v0.18.4.3.tar.bz2 | tar --transform='flags=r;s|.*/||' -xjf - -C /usr/bin monero-x86_64-linux-gnu-v0.18.4.3/monero-wallet-rpc
 
 # Install turbine
 COPY --from=build /build/target/release/turbine /usr/bin/turbine

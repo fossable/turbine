@@ -87,17 +87,16 @@ impl MoneroState {
                 .await?;
         } else if let Ok(_seed) = std::env::var("MONERO_WALLET_SEED") {
             debug!("Restoring wallet from mnemonic seed phrase");
-            todo!();
-            // wallet
-            //     .restore_deterministic_wallet(RestoreDeterministicWalletArgs {
-            //         autosave_current: None,
-            //         filename: "turbine".into(),
-            //         password: args.monero_wallet_password.clone(),
-            //         restore_height: Some(args.monero_block_height),
-            //         seed,
-            //         seed_offset: None,
-            //     })
-            //     .await?;
+            wallet
+                .restore_deterministic_wallet(RestoreDeterministicWalletArgs {
+                    autosave_current: None,
+                    filename: "turbine".into(),
+                    password: args.monero_wallet_password.clone(),
+                    restore_height: Some(args.monero_block_height),
+                    seed,
+                    seed_offset: None,
+                })
+                .await?;
         } else {
             wallet
                 .generate_from_keys(GenerateFromKeysArgs {

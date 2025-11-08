@@ -1,3 +1,5 @@
+#[cfg(feature = "monero")]
+use crate::api::PaidCommit;
 use crate::currency::Address;
 use anyhow::{bail, Result};
 use base64::prelude::*;
@@ -145,13 +147,13 @@ impl TurbineRepo {
     pub fn find_monero_transaction(
         &self,
         transfer: &monero_rpc::GotTransfer,
-    ) -> Result<Transaction> {
+    ) -> Result<PaidCommit> {
         if let Some(contributor) = self
             .contributors
             .iter()
             .find(|contributor| contributor.address == Address::XMR(transfer.address.to_string()))
         {
-            Ok(Transaction {
+            Ok(PaidCommit {
                 amount: format!("{}", transfer.amount.as_xmr()),
                 timestamp: transfer.timestamp.timestamp() as u64,
                 contributor_name: contributor.name.clone(),

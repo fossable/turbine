@@ -223,7 +223,7 @@
         <p>Paid commits</p>
         <ul>
           {% for commit in commits %}
-          <li class="list-item">{{ commit.author }} XMR</li>
+          <li class="list-item">{{ commit.contributor_name }} - {{ commit.amount }} XMR</li>
           {% endfor %}
         </ul>
       </div>
