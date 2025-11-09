@@ -1,12 +1,14 @@
-use askama_axum::Template;
 use axum::{routing::get, Router};
-use git_turbine::api::{IndexTemplate, PaidCommit};
+use git_turbine::api::{IndexTemplate, PaidCommit, RepoUrl};
 
-fn create_mock_commit(name: &str, amount: &str, timestamp: u64) -> PaidCommit {
+fn create_mock_commit(name: &str, amount: &str, timestamp: u64, commit_id: &str, message: &str) -> PaidCommit {
     PaidCommit {
         contributor_name: name.to_string(),
         amount: amount.to_string(),
         timestamp,
+        commit_id: commit_id.to_string(),
+        commit_message: message.to_string(),
+        currency: "XMR".to_string(),
     }
 }
 
@@ -18,8 +20,8 @@ async fn index() -> IndexTemplate {
         monero_block_height: 4_000_000,
         monero_network: "Main".to_string(),
         monero_wallet_address: "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge".to_string(),
-        repository_url: "https://github.com/whale/project".to_string(),
-        commits: vec![create_mock_commit("Whale", "1000000.00000", 1234567890)],
+        repository_url: RepoUrl::new("https://github.com/whale/project".to_string()),
+        commits: vec![create_mock_commit("Whale", "1000000.00000", 1234567890, "abc1234", "feat: major contribution to the project")],
     }
 }
 

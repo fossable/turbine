@@ -93,12 +93,18 @@
       margin-top: 40px;
       margin-left: auto;
       margin-right: auto;
-      max-width: 400px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .logo-svg img {
+      width: 100%;
+      height: auto;
     }
 
     .svg-monero {
-      max-width: 20px;
-      max-height: 20px;
+      width: 24px;
+      height: 24px;
     }
 
     .svg-copy {
@@ -113,19 +119,63 @@
       width: 100%;
     }
 
-    .balance-positive {
-      font-family: Arial, sans-serif;
-      font-size: 16px;
-      font-weight: bold;
-      color: #2ecc71;
-      display: inline;
-      margin-left: 5px;
+    .balance-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 15px;
     }
 
-    .balance-zero {
+    .balance-label {
+      font-size: 14px;
+      color: #9aa0a6;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .balance-display {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .balance-amount {
+      font-family: 'Courier New', monospace;
+      font-size: 36px;
+      font-weight: bold;
+      color: #2ecc71;
+      line-height: 1;
+    }
+
+    .balance-currency {
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #2ecc71;
+    }
+
+    .balance-usd {
+      font-size: 16px;
+      color: #9aa0a6;
+      margin-bottom: 15px;
+    }
+
+    .balance-zero .balance-amount,
+    .balance-zero .balance-currency {
       color: #7f8c8d;
-      display: inline;
-      margin-left: 5px;
+    }
+
+    .network-warning {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      font-weight: bold;
+      color: #f39c12;
+      background-color: rgba(243, 156, 18, 0.1);
+      padding: 8px 12px;
+      border-radius: 4px;
+      border-left: 3px solid #f39c12;
+      margin: 10px 0;
     }
 
     #wallet-address {
@@ -145,22 +195,178 @@
     }
 
     .transaction-block {
-      height: 200px;
+      height: 500px;
       overflow-y: auto;
       border: 1px solid rgb(62, 68, 70);
-      padding-top: 10px;
-      padding-left: 20px;
-      padding-right: 20px;
+      padding: 20px;
       text-align: left;
       background-color: rgb(24, 26, 27);
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       margin-left: 10px;
+      flex: 1;
     }
 
-    .list-item {
-      padding: 5px 0;
-      border-bottom: 1px solid #eee;
+    .info-block {
+      border: 1px solid rgb(62, 68, 70);
+      padding: 30px;
+      text-align: left;
+      background-color: rgb(24, 26, 27);
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-left: 10px;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .info-block h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #e8e6e3;
+      font-size: 18px;
+    }
+
+    .info-block p {
+      color: #9aa0a6;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .info-block ol {
+      color: #9aa0a6;
+      line-height: 1.8;
+      padding-left: 25px;
+    }
+
+    .info-block li {
+      margin-bottom: 8px;
+      padding: 0;
+      background-color: transparent;
+      border-radius: 0;
+      color: #e8e6e3;
+    }
+
+    .transaction-block h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #e8e6e3;
+      font-size: 18px;
+    }
+
+    .commit-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .commit-item {
+      display: flex;
+      gap: 15px;
+      padding: 15px;
+      margin-bottom: 12px;
+      background-color: rgb(32, 35, 36);
+      border-radius: 6px;
+      border: 1px solid rgb(50, 54, 56);
+      transition: all 0.2s ease;
+    }
+
+    .commit-item:hover {
+      background-color: rgb(38, 42, 43);
+      border-color: rgb(62, 68, 70);
+      transform: translateX(2px);
+    }
+
+    .commit-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgb(45, 49, 51);
+      border-radius: 50%;
+      padding: 8px;
+    }
+
+    .commit-icon img {
+      width: 100%;
+      height: 100%;
+    }
+
+    .commit-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .commit-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .commit-link {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #8ab4f8;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .commit-link:hover {
+      text-decoration: underline;
+    }
+
+    .commit-message {
+      color: #e8e6e3;
+      font-size: 14px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .commit-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: #9aa0a6;
+      flex-wrap: wrap;
+    }
+
+    .commit-author {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .commit-timestamp {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .commit-amount {
+      margin-left: auto;
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    .amount-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #2ecc71;
+      display: block;
+    }
+
+    .amount-currency {
+      font-size: 11px;
+      color: #9aa0a6;
+      text-transform: uppercase;
     }
 
     .tooltip {
@@ -210,16 +416,24 @@
       </div>
       <a href="{{ repository_url }}">{{ repository_url }}</a>
     </div>
-    {% if monero_enabled %}
-    <div style="display: flex; direction: row;">
+    <div style="display: flex; direction: row; align-items: flex-start;">
+      {% if monero_enabled %}
       <div class="summary-block">
-        <img class="svg-monero" src="/assets/monero.svg">
-        {% if monero_balance != "0.0" %}
-        <p class="balance-positive">{{ monero_balance }} XMR ~ (${{ monero_balance_usd }})</p>
-        {% else %}
-        <p class="balance-zero">{{ monero_balance }} XMR</p>
+        <div class="balance-header">
+          <img class="svg-monero" src="/assets/monero.svg">
+          <span class="balance-label">Balance</span>
+        </div>
+        <div class="balance-display{% if monero_balance == " 0.0" || monero_balance=="0.00000" %} balance-zero{% endif
+          %}">
+          <div class="balance-amount">{{ monero_balance }}</div>
+          <div class="balance-currency">XMR</div>
+        </div>
+        {% if monero_balance != "0.0" && monero_balance != "0.00000" %}
+        <div class="balance-usd">${{ monero_balance_usd }} USD</div>
         {% endif %}
-        <p>Network: {{ monero_network }} ({{ monero_block_height }})</p>
+        {% if monero_network != "Main" %}
+        <p class="network-warning">Network: {{ monero_network }} ({{ monero_block_height }})</p>
+        {% endif %}
         <div class="wallet-address-container">
           <input type="text" id="wallet-address" value="{{ monero_wallet_address }}" readonly>
           <button class="copy-button" onclick="copyAddress()">
@@ -227,16 +441,66 @@
           </button>
         </div>
       </div>
+      {% endif %}
+      {% if !commits.is_empty() %}
       <div class="transaction-block">
-        <p>Paid commits</p>
-        <ul>
+        <h2>Paid Commits</h2>
+        <ul class="commit-list">
           {% for commit in commits %}
-          <li class="list-item">{{ commit.contributor_name }} - {{ commit.amount }} XMR</li>
+          <li class="commit-item">
+            <div class="commit-icon">
+              <img src="/assets/{{ commit.currency|lower }}.svg" alt="{{ commit.currency }}">
+            </div>
+            <div class="commit-content">
+              <div class="commit-header">
+                {% if repository_url.is_github() %}
+                <a href="{{ repository_url }}/commit/{{ commit.commit_id }}" target="_blank" class="commit-link">{{
+                  commit.commit_id }}</a>
+                {% else %}
+                <span class="commit-link">{{ commit.commit_id }}</span>
+                {% endif %}
+              </div>
+              <div class="commit-message" title="{{ commit.commit_message }}">{{ commit.commit_message }}</div>
+              <div class="commit-meta">
+                <span class="commit-author">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                    <path
+                      d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
+                  </svg>
+                  {{ commit.contributor_name }}
+                </span>
+                <span class="commit-timestamp">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
+                  </svg>
+                  <script>document.write(new Date({{commit.timestamp}} * 1000).toLocaleString())</script>
+                </span>
+              </div>
+            </div>
+            <div class="commit-amount">
+              <span class="amount-value">{{ commit.amount }}</span>
+              <span class="amount-currency">{{ commit.currency }}</span>
+            </div>
+          </li>
           {% endfor %}
         </ul>
       </div>
+      {% else %}
+      <div class="info-block">
+        <h2>Getting Started</h2>
+        <p>No paid commits yet. Here's how to get started:</p>
+        <ol>
+          <li>Sign your commits with GPG</li>
+          <li>Include your cryptocurrency address in the commit message</li>
+          <li>Push signed commits to this repository</li>
+          <li>Turbine will automatically detect and reward your contributions</li>
+        </ol>
+        <p>For more information, visit the <a href="https://github.com/fossable/turbine" target="_blank">turbine
+            documentation</a>.</p>
+      </div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 
   <script>
@@ -244,7 +508,7 @@
       const addressInput = document.getElementById('wallet-address');
       addressInput.select();
       document.execCommand('copy');
-      alert('Copied to clipboard!');
+      alert('Copied wallet address to clipboard.');
     }
   </script>
 </body>

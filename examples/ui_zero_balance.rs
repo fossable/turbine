@@ -3,12 +3,12 @@ use git_turbine::api::{IndexTemplate, RepoUrl};
 
 async fn index() -> IndexTemplate {
     IndexTemplate {
-        monero_enabled: false,
-        monero_balance: String::new(),
-        monero_balance_usd: String::new(),
-        monero_block_height: 0,
-        monero_network: String::new(),
-        monero_wallet_address: String::new(),
+        monero_enabled: true,
+        monero_balance: "0.00000".to_string(),
+        monero_balance_usd: "0.00".to_string(),
+        monero_block_height: 2_800_000,
+        monero_network: "Main".to_string(),
+        monero_wallet_address: "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge".to_string(),
         repository_url: RepoUrl::new("https://github.com/fossable/turbine".to_string()),
         commits: vec![],
     }

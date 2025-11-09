@@ -9,13 +9,34 @@ use axum_macros::debug_handler;
 use cached::proc_macro::once;
 use rust_embed::Embed;
 use std::time::Duration;
-use tracing::{debug, error, info};
+
+#[derive(Debug, Clone, Default)]
+pub struct RepoUrl(String);
+
+impl RepoUrl {
+    pub fn new(url: String) -> Self {
+        Self(url)
+    }
+
+    pub fn is_github(&self) -> bool {
+        self.0.starts_with("https://github.com")
+    }
+}
+
+impl std::fmt::Display for RepoUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PaidCommit {
     pub amount: String,
     pub timestamp: u64,
     pub contributor_name: String,
+    pub commit_id: String,
+    pub commit_message: String,
+    pub currency: String,
 }
 
 #[derive(Template, Debug, Clone, Default)]
@@ -26,7 +47,7 @@ pub struct IndexTemplate {
     pub monero_block_height: u64,
     pub monero_network: String,
     pub monero_wallet_address: String,
-    pub repository_url: String,
+    pub repository_url: RepoUrl,
     pub commits: Vec<PaidCommit>,
     pub monero_balance_usd: String,
 }
@@ -119,24 +140,35 @@ pub async fn refresh(State(state): State<AppState>) {
             crate::currency::Address::BTC(_) => todo!(),
             #[cfg(feature = "monero")]
             crate::currency::Address::XMR(address) => {
-                let transfer_count = state.monero.count_transfers(&address).await.unwrap();
-                debug!(count = transfer_count, address = ?address, "Transfers to XMR address");
+                debug!(address = ?address, total_commits = contributor.commits.len(), "Processing XMR contributor");
 
-                for commit_id in contributor.commits.iter().skip(transfer_count) {
-                    match state
-                        .monero
-                        .transfer(
-                            &address,
-                            monero_rpc::monero::Amount::from_pico(
-                                contributor.compute_payout(commit_id.clone(), state.base_payout, state.max_payout_cap),
-                            ),
-                            commit_id,
-                        )
-                        .await
-                    {
-                        Ok(_) => info!("Transfer complete"),
-                        Err(e) => error!(error=%e, "Transfer failed"),
-                    };
+                for commit_id in contributor.commits.iter() {
+                    // Check if this commit was already paid using its dedicated subaddress
+                    match state.monero.is_commit_paid(*commit_id).await {
+                        Ok(true) => {
+                            debug!(commit = ?commit_id, "Commit already paid, skipping");
+                            continue;
+                        }
+                        Ok(false) => {
+                            // Not paid yet, proceed with transfer
+                            let payout = contributor.compute_payout(*commit_id, state.base_payout, state.max_payout_cap);
+                            match state
+                                .monero
+                                .transfer(
+                                    &address,
+                                    monero_rpc::monero::Amount::from_pico(payout),
+                                    commit_id,
+                                )
+                                .await
+                            {
+                                Ok(_) => info!(commit = ?commit_id, amount = payout, "Transfer complete"),
+                                Err(e) => error!(commit = ?commit_id, error=%e, "Transfer failed"),
+                            };
+                        }
+                        Err(e) => {
+                            error!(commit = ?commit_id, error=%e, "Failed to check if commit was paid");
+                        }
+                    }
                 }
             }
         };

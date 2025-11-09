@@ -20,6 +20,14 @@ use std::{
 use std::{str::FromStr, sync::Mutex};
 use tracing::{debug, info, instrument};
 
+/// Derive a deterministic subaddress index from a commit OID.
+/// This ensures each commit maps to a unique subaddress for idempotent payments.
+pub fn commit_to_subaddress_index(commit_id: Oid) -> u32 {
+    let hash = commit_id.as_bytes();
+    // Use first 4 bytes of commit hash as subaddress index
+    u32::from_be_bytes([hash[0], hash[1], hash[2], hash[3]])
+}
+
 #[derive(Clone, Debug)]
 pub struct MoneroState {
     pub wallet: WalletClient,
@@ -143,14 +151,18 @@ impl MoneroState {
         Ok(balance.balance)
     }
 
-    /// Count outbound transfers to the given address.
-    pub async fn count_transfers(&self, address: &str) -> Result<usize> {
+    /// Check if a specific commit has already been paid by checking its dedicated subaddress.
+    /// This is stateless and idempotent - the commit OID deterministically maps to a subaddress.
+    #[instrument(skip(self), ret)]
+    pub async fn is_commit_paid(&self, commit_id: Oid) -> Result<bool> {
+        let subaddress_index = commit_to_subaddress_index(commit_id);
+
         let transfers = self
             .wallet
             .get_transfers(GetTransfersSelector {
                 category_selector: HashMap::from([(GetTransfersCategory::Out, true)]),
                 account_index: Some(self.account_index),
-                subaddr_indices: None,
+                subaddr_indices: Some(vec![subaddress_index]),
                 block_height_filter: Some(BlockHeightFilter {
                     min_height: Some(self.minimum_block_height),
                     max_height: None,
@@ -158,12 +170,10 @@ impl MoneroState {
             })
             .await?;
 
-        Ok(transfers
+        Ok(!transfers
             .get(&GetTransfersCategory::Out)
             .unwrap_or(&vec![])
-            .iter()
-            .filter(|transfer| transfer.address.to_string() == address.to_string())
-            .count())
+            .is_empty())
     }
 
     /// Get all outbound transfers.
@@ -188,16 +198,26 @@ impl MoneroState {
             .to_owned())
     }
 
-    /// Transfer the given amount of Monero.
-    pub async fn transfer(&self, address: &str, amount: Amount, _commit_id: &Oid) -> Result<()> {
-        info!(amount = ?amount, dest = ?address, "Transferring Monero");
+    /// Transfer the given amount of Monero from a commit-specific subaddress.
+    /// Each commit gets a unique subaddress derived from its OID, ensuring idempotent payments.
+    pub async fn transfer(&self, address: &str, amount: Amount, commit_id: &Oid) -> Result<()> {
+        let subaddress_index = commit_to_subaddress_index(*commit_id);
+
+        info!(
+            amount = ?amount,
+            dest = ?address,
+            commit = ?commit_id,
+            subaddr_index = subaddress_index,
+            "Transferring Monero from commit-specific subaddress"
+        );
+
         self.wallet
             .transfer(
                 HashMap::from([(Address::from_str(address)?, amount)]),
                 TransferPriority::Default,
                 TransferOptions {
                     account_index: Some(self.account_index),
-                    subaddr_indices: None,
+                    subaddr_indices: Some(vec![subaddress_index]),
                     mixin: None,
                     ring_size: Some(16),
                     unlock_time: None,

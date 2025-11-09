@@ -6,7 +6,7 @@ use axum::{
 };
 use chrono::Utc;
 use clap::Args;
-use std::{path::PathBuf, process::ExitCode, sync::Arc};
+use std::{process::ExitCode, sync::Arc};
 
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_schedule::{every, Job};

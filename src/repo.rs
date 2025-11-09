@@ -1,5 +1,6 @@
 #[cfg(feature = "monero")]
 use crate::api::PaidCommit;
+use crate::api::RepoUrl;
 use crate::currency::Address;
 use anyhow::{bail, Result};
 use base64::prelude::*;
@@ -63,7 +64,7 @@ pub struct TurbineRepo {
     pub last_refresh: Option<DateTime<Utc>>,
 
     /// Remote URI
-    pub remote: String,
+    pub remote: RepoUrl,
 
     /// Cloned repo directory
     tmp: TempDir,
@@ -148,7 +149,7 @@ impl TurbineRepo {
             contributors: vec![],
             last: None,
             last_refresh: None,
-            remote: remote.to_string(),
+            remote: RepoUrl::new(remote.to_string()),
             tmp,
         };
 
@@ -162,15 +163,48 @@ impl TurbineRepo {
         &self,
         transfer: &monero_rpc::GotTransfer,
     ) -> Result<PaidCommit> {
+        // First, find the contributor by address
         if let Some(contributor) = self
             .contributors
             .iter()
             .find(|contributor| contributor.address == Address::XMR(transfer.address.to_string()))
         {
+            // Try to find the matching commit by checking subaddress indices
+            // The transfer's subaddr_index should match a commit's derived subaddress
+            let commit_info = if let Some(subaddr_indices) = &transfer.subaddr_index {
+                // Find which commit maps to this subaddress index
+                contributor.commits.iter()
+                    .find(|commit_id| {
+                        let derived_index = crate::currency::monero::commit_to_subaddress_index(**commit_id);
+                        subaddr_indices.minor == derived_index
+                    })
+                    .and_then(|commit_id| {
+                        // Get the commit from the repo
+                        self.container.find_commit(*commit_id).ok().map(|commit| {
+                            let message = commit.message()
+                                .unwrap_or("")
+                                .lines()
+                                .next()
+                                .unwrap_or("(no message)")
+                                .to_string();
+                            (commit_id.to_string(), message)
+                        })
+                    })
+            } else {
+                None
+            };
+
+            let (commit_id, commit_message) = commit_info.unwrap_or_else(|| {
+                ("unknown".to_string(), "(unable to find commit)".to_string())
+            });
+
             Ok(PaidCommit {
-                amount: format!("{}", transfer.amount.as_xmr()),
+                amount: format!("{:.5}", transfer.amount.as_xmr()),
                 timestamp: transfer.timestamp.timestamp() as u64,
                 contributor_name: contributor.name.clone(),
+                commit_id,
+                commit_message,
+                currency: "XMR".to_string(),
             })
         } else {
             bail!("Transaction not found");
