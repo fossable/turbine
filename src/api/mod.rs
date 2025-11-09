@@ -7,7 +7,6 @@ use axum::{
 };
 use axum_macros::debug_handler;
 use cached::proc_macro::once;
-use float_pretty_print::PrettyPrintFloat;
 use rust_embed::Embed;
 use std::time::Duration;
 use tracing::{debug, error, info};
@@ -22,14 +21,14 @@ pub struct PaidCommit {
 #[derive(Template, Debug, Clone, Default)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
-    monero_balance: String,
-    monero_enabled: bool,
-    monero_block_height: u64,
-    monero_network: String,
-    monero_wallet_address: String,
-    repository_url: String,
-    commits: Vec<PaidCommit>,
-    monero_balance_usd: String,
+    pub monero_balance: String,
+    pub monero_enabled: bool,
+    pub monero_block_height: u64,
+    pub monero_network: String,
+    pub monero_wallet_address: String,
+    pub repository_url: String,
+    pub commits: Vec<PaidCommit>,
+    pub monero_balance_usd: String,
 }
 
 #[once(time = "60")]
@@ -42,7 +41,7 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
     IndexTemplate {
         monero_enabled: cfg!(feature = "monero"),
         #[cfg(feature = "monero")]
-        monero_balance: format!("{:.5}", PrettyPrintFloat(monero_balance)),
+        monero_balance: format!("{:.5}", monero_balance),
         #[cfg(feature = "monero")]
         monero_block_height: state.monero.wallet.get_height().await.unwrap().get(),
         #[cfg(feature = "monero")]
@@ -67,7 +66,7 @@ pub async fn index(State(state): State<AppState>) -> IndexTemplate {
         #[cfg(feature = "monero")]
         monero_balance_usd: format!(
             "{:.2}",
-            PrettyPrintFloat(crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance)
+            crate::currency::lookup("XMR").await.unwrap_or(0.0) * monero_balance
         ),
         ..Default::default()
     }
@@ -129,7 +128,7 @@ pub async fn refresh(State(state): State<AppState>) {
                         .transfer(
                             &address,
                             monero_rpc::monero::Amount::from_pico(
-                                contributor.compute_payout(commit_id.clone()),
+                                contributor.compute_payout(commit_id.clone(), state.base_payout, state.max_payout_cap),
                             ),
                             commit_id,
                         )

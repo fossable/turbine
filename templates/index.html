@@ -82,6 +82,7 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      flex-shrink: 0;
     }
 
     .copy-button:hover {
@@ -90,6 +91,8 @@
 
     .logo-svg {
       margin-top: 40px;
+      margin-left: auto;
+      margin-right: auto;
       max-width: 400px;
     }
 
@@ -104,7 +107,10 @@
     }
 
     .wallet-address-container {
-      white-space: nowrap;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
     }
 
     .balance-positive {
@@ -123,7 +129,9 @@
     }
 
     #wallet-address {
-      width: 100%;
+      flex: 1;
+      min-width: 0;
+      font-size: 12px;
     }
 
     .summary-block {
@@ -178,14 +186,14 @@
     }
 
     a {
-      color: #007bff;
+      color: #8ab4f8;
       text-decoration: none;
       transition: color 0.3s ease;
-      font-weight: bold;
+      font-weight: normal;
     }
 
     a:hover {
-      color: #0056b3;
+      color: #a8c7fa;
       text-decoration: underline;
     }
   </style>

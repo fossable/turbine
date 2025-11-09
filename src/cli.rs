@@ -55,11 +55,21 @@ pub struct ServeArgs {
     #[cfg(feature = "monero")]
     #[clap(long, default_value = "stagenet.xmr-tw.org:38081")]
     pub monero_daemon_address: String,
+
+    /// Base payout amount in piconero for the first commit (default: 1000000000 = 0.001 XMR)
+    #[clap(long, default_value_t = 1000000000)]
+    pub base_payout: u64,
+
+    /// Maximum payout cap in piconero per commit (optional, no default = unlimited)
+    #[clap(long)]
+    pub max_payout_cap: Option<u64>,
 }
 
 #[derive(Clone, Debug)]
 pub struct AppState {
     pub repo: Arc<Mutex<TurbineRepo>>,
+    pub base_payout: u64,
+    pub max_payout_cap: Option<u64>,
 
     #[cfg(feature = "monero")]
     pub monero: crate::currency::monero::MoneroState,
@@ -68,6 +78,8 @@ pub struct AppState {
 pub async fn serve(args: &ServeArgs) -> Result<ExitCode> {
     let state = AppState {
         repo: Arc::new(Mutex::new(TurbineRepo::new(&args.repo, &args.branch)?)),
+        base_payout: args.base_payout,
+        max_payout_cap: args.max_payout_cap,
 
         #[cfg(feature = "monero")]
         monero: crate::currency::monero::MoneroState::new(&args).await?,
