@@ -9,6 +9,7 @@ use axum_macros::debug_handler;
 use cached::proc_macro::once;
 use rust_embed::Embed;
 use std::time::Duration;
+use tracing::{debug, error, info};
 
 #[derive(Debug, Clone, Default)]
 pub struct RepoUrl(String);

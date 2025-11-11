@@ -1,12 +1,16 @@
 [package]
 authors = ["Tyler Cook"]
-description = "Cryptocurrency for commits!"
+description = "Turning commits into cryptocurrency"
 edition = "2021"
-license = "AGPL-3.0-only"
+license = "Unlicense"
 name = "git-turbine"
 repository = "https://github.com/fossable/turbine"
 rust-version = "1.74"
 version = "0.0.4"
+
+[lib]
+name = "git_turbine"
+path = "src/lib.rs"
 
 [[bin]]
 name = "turbine"

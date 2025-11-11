@@ -171,12 +171,12 @@ impl TurbineRepo {
         {
             // Try to find the matching commit by checking subaddress indices
             // The transfer's subaddr_index should match a commit's derived subaddress
-            let commit_info = if let Some(subaddr_indices) = &transfer.subaddr_index {
+            let commit_info = {
                 // Find which commit maps to this subaddress index
                 contributor.commits.iter()
                     .find(|commit_id| {
                         let derived_index = crate::currency::monero::commit_to_subaddress_index(**commit_id);
-                        subaddr_indices.minor == derived_index
+                        transfer.subaddr_index.minor == derived_index
                     })
                     .and_then(|commit_id| {
                         // Get the commit from the repo
@@ -190,8 +190,6 @@ impl TurbineRepo {
                             (commit_id.to_string(), message)
                         })
                     })
-            } else {
-                None
             };
 
             let (commit_id, commit_message) = commit_info.unwrap_or_else(|| {
