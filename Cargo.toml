@@ -6,7 +6,7 @@ license = "Unlicense"
 name = "git-turbine"
 repository = "https://github.com/fossable/turbine"
 rust-version = "1.74"
-version = "0.0.4"
+version = "0.0.5"
 
 [lib]
 name = "git_turbine"
