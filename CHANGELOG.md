@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/fossable/turbine/compare/v0.0.4...v0.0.5) - 2025-11-11
+
+### Other
+
+- Relicense
+- improve commit log UI
+- add UI examples
+- continue e2e tests
+- begin to add e2e test
+- begin to show all paid commits
+- allow keyserver to be configured
+
 ## [0.0.4](https://github.com/fossable/turbine/compare/v0.0.3...v0.0.4) - 2024-06-30
 
 ### Other
